@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chronicae - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#ffb5a0",
+                      "on-tertiary-container": "#fffbff",
+                      "on-error-container": "#93000a",
+                      "background": "#fef8f6",
+                      "on-secondary-fixed": "#261815",
+                      "on-surface-variant": "#5b4039",
+                      "on-secondary-container": "#73605c",
+                      "on-secondary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "surface": "#fef8f6",
+                      "on-tertiary-fixed-variant": "#7f2a0d",
+                      "tertiary-fixed-dim": "#ffb59e",
+                      "on-secondary-fixed-variant": "#54433f",
+                      "tertiary": "#9c3f20",
+                      "primary": "#ac2d00",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#3a0b00",
+                      "surface-tint": "#b02e00",
+                      "primary-container": "#d63c05",
+                      "tertiary-container": "#bb5636",
+                      "on-background": "#1d1b1a",
+                      "inverse-on-surface": "#f5efed",
+                      "surface-dim": "#ded9d7",
+                      "inverse-primary": "#ffb5a0",
+                      "secondary-fixed-dim": "#dac1bc",
+                      "secondary": "#6d5a56",
+                      "surface-container-low": "#f8f2f0",
+                      "surface-container-high": "#ede7e5",
+                      "surface-container": "#f2edeb",
+                      "inverse-surface": "#32302f",
+                      "error-container": "#ffdad6",
+                      "outline-variant": "#e4beb4",
+                      "secondary-fixed": "#f7ddd8",
+                      "tertiary-fixed": "#ffdbd0",
+                      "surface-container-highest": "#e7e1df",
+                      "on-primary-fixed-variant": "#872100",
+                      "primary-fixed": "#ffdbd1",
+                      "on-surface": "#1d1b1a",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#f7ddd8",
+                      "surface-bright": "#fef8f6",
+                      "on-primary-fixed": "#3b0900",
+                      "surface-variant": "#e7e1df",
+                      "on-primary-container": "#fffbff",
+                      "on-error": "#ffffff",
+                      "outline": "#8f7067"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Manrope"],
+                      "body": ["Manrope"],
+                      "label": ["Manrope"]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+<div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden">
+<div class="absolute top-[-10%] right-[-10%] w-[80%] h-[60%] bg-primary-fixed opacity-20 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-5%] left-[-5%] w-[60%] h-[40%] bg-tertiary-fixed opacity-30 blur-[100px] rounded-full"></div>
+</div>
+<header class="fixed top-0 w-full z-50 bg-[#fef8f6]/80 dark:bg-[#1d1b1a]/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(29,27,26,0.06)]">
+<div class="flex items-center justify-between px-6 h-16 w-full">
+<button class="material-symbols-outlined text-[#ac2d00] dark:text-[#d63c05] active:scale-95 transition-transform duration-200">arrow_back</button>
+<div class="font-manrope text-2xl font-extrabold tracking-tighter bg-gradient-to-r from-[#ac2d00] to-[#d63c05] bg-clip-text text-transparent">Chronicae</div>
+<div class="w-6"></div>
+</div>
+</header>
+<main class="w-full max-w-md px-8 pt-24 pb-12 flex flex-col flex-1 items-start justify-center">
+<div class="mb-12">
+<h1 class="text-4xl font-extrabold tracking-tight text-on-surface mb-2 leading-none">Welcome back</h1>
+<p class="text-on-surface-variant font-body leading-relaxed max-w-[80%]">The Radiant Pulse awaits. Sign in to resume your journey toward resilience.</p>
+</div>
+<section class="w-full space-y-6">
+<div class="relative group">
+<label class="block text-sm font-label font-semibold text-on-surface-variant mb-2 tracking-wider">EMAIL ADDRESS</label>
+<div class="relative">
+<input class="w-full h-14 px-5 rounded-xl bg-surface-container-low border-0 focus:ring-2 focus:ring-primary-container text-on-surface placeholder:text-outline transition-all duration-300" placeholder="hello@chronicae.com" type="email"/>
+</div>
+</div>
+<div class="relative group">
+<div class="flex justify-between items-center mb-2">
+<label class="block text-sm font-label font-semibold text-on-surface-variant tracking-wider">PASSWORD</label>
+<a class="text-sm font-semibold text-primary hover:opacity-80 transition-opacity" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<input class="w-full h-14 px-5 rounded-xl bg-surface-container-low border-0 focus:ring-2 focus:ring-primary-container text-on-surface placeholder:text-outline transition-all duration-300" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/50">visibility</button>
+</div>
+</div>
+<div class="pt-4">
+<button class="w-full h-14 rounded-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg shadow-[0_8px_24px_rgba(172,45,0,0.2)] active:scale-95 transition-transform duration-200">
+                    Log in
+                </button>
+</div>
+</section>
+<div class="w-full mt-12 flex flex-col items-center gap-6">
+<div class="flex items-center w-full gap-4">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="text-xs font-label text-on-surface-variant/50 uppercase tracking-widest">or continue with</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<div class="flex gap-4 w-full">
+<button class="flex-1 h-14 flex items-center justify-center rounded-xl bg-surface-container-lowest border border-outline-variant/20 shadow-sm active:scale-95 transition-transform">
+<img alt="Google Logo" class="w-6 h-6" data-alt="Official Google icon with red, yellow, green, and blue segments on white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6WaD1A0S6Ko44bqfLsDmfJxgYGQtcb9xyiLTTo7gmQqO_G8uTCPcXX9zuBq_sK990ahTFgbpcB_4H5Lcdy6pSN2gAtHr68AEPouz9-inXTzHEhbE6sDDBx7vw99F1WnqRMfR4ACIHlbxzrSB7SLp_8B4TJndKO5bHXgXCs7ebsdSL7BvZJ9sFytNA1PkAljCP3ZasDUfYVdluHTlOG4zHdorVn2Vgma1kjJFNV2cjKhIusL2uAAFgUmHGrZsq1MJRGegDffKZPOAX"/>
+</button>
+<button class="flex-1 h-14 flex items-center justify-center rounded-xl bg-surface-container-lowest border border-outline-variant/20 shadow-sm active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">ios</span>
+</button>
+</div>
+</div>
+<div class="w-full mt-auto pt-12 pb-4 text-center">
+<p class="text-on-surface-variant">Don't have an account? 
+                <a class="font-bold text-primary hover:opacity-80 transition-opacity" href="#">Sign up</a>
+</p>
+</div>
+</main>
+<footer class="w-full py-8 bg-transparent flex flex-col items-center gap-4 px-8 text-center">
+<div class="flex gap-6">
+<a class="font-manrope text-sm text-[#5b4039] opacity-70 hover:text-[#ac2d00] underline" href="#">Privacy Policy</a>
+<a class="font-manrope text-sm text-[#5b4039] opacity-70 hover:text-[#ac2d00] underline" href="#">Terms of Service</a>
+</div>
+<p class="font-manrope text-sm leading-relaxed text-[#ac2d00]">© 2024 Chronicae. All rights reserved.</p>
+</footer>
+</body></html>
