@@ -1,7 +1,88 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { AuthService } from '../services/authService'
 import { validateSignupForm, getAuthErrorMessage, ValidationErrors } from '../utils/validation'
+
+const COUNTRIES = [
+  // North America
+  'Canada',
+  'Mexico',
+  'United States',
+  // Central America
+  'Belize',
+  'Costa Rica',
+  'El Salvador',
+  'Guatemala',
+  'Honduras',
+  'Nicaragua',
+  'Panama',
+  // South America
+  'Argentina',
+  'Bolivia',
+  'Brazil',
+  'Chile',
+  'Colombia',
+  'Ecuador',
+  'Guyana',
+  'Paraguay',
+  'Peru',
+  'Suriname',
+  'Uruguay',
+  'Venezuela',
+  // Caribbean
+  'Antigua and Barbuda',
+  'Bahamas',
+  'Barbados',
+  'Cuba',
+  'Dominica',
+  'Dominican Republic',
+  'Grenada',
+  'Haiti',
+  'Jamaica',
+  'Saint Lucia',
+  'Trinidad and Tobago',
+  // Europe - Western
+  'Austria',
+  'Belgium',
+  'France',
+  'Germany',
+  'Ireland',
+  'Luxembourg',
+  'Netherlands',
+  'United Kingdom',
+  // Europe - Northern
+  'Denmark',
+  'Finland',
+  'Iceland',
+  'Norway',
+  'Sweden',
+  // Europe - Southern
+  'Croatia',
+  'Cyprus',
+  'Greece',
+  'Italy',
+  'Malta',
+  'Portugal',
+  'Slovenia',
+  'Spain',
+  // Europe - Eastern
+  'Albania',
+  'Belarus',
+  'Bosnia and Herzegovina',
+  'Bulgaria',
+  'Czech Republic',
+  'Hungary',
+  'Kosovo',
+  'Moldova',
+  'Montenegro',
+  'North Macedonia',
+  'Poland',
+  'Romania',
+  'Russia',
+  'Serbia',
+  'Slovakia',
+  'Ukraine',
+]
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -16,6 +97,9 @@ export default function Signup() {
   const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('United States')
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const countryInputRef = useRef<HTMLDivElement>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -25,6 +109,34 @@ export default function Signup() {
       setFieldErrors((prev: ValidationErrors) => ({ ...prev, [name]: undefined }))
     }
   }
+
+  const handleCountrySearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setCountrySearch(value)
+    setShowCountryDropdown(true)
+  }
+
+  const selectCountry = (country: string) => {
+    setFormData(prev => ({ ...prev, country }))
+    setCountrySearch(country)
+    setShowCountryDropdown(false)
+  }
+
+  const filteredCountries = COUNTRIES.filter(country =>
+    country.toLowerCase().includes(countrySearch.toLowerCase())
+  )
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (countryInputRef.current && !countryInputRef.current.contains(event.target as Node)) {
+        setShowCountryDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -189,22 +301,37 @@ export default function Signup() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-on-surface-variant ml-1 tracking-wide">Country</label>
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className={`w-full h-14 px-5 bg-surface-container-low border-none rounded-xl focus:ring-2 text-on-surface font-medium appearance-none cursor-pointer transition-all ${
-                  fieldErrors.country ? 'ring-2 ring-error' : 'focus:ring-primary/20'
-                }`}
-                disabled={isLoading}
-              >
-                <option>United States</option>
-                <option>United Kingdom</option>
-                <option>Canada</option>
-                <option>Australia</option>
-                <option>Mexico</option>
-                <option>Spain</option>
-              </select>
+              <div ref={countryInputRef} className="relative">
+                <input
+                  type="text"
+                  value={countrySearch}
+                  onChange={handleCountrySearch}
+                  onFocus={() => setShowCountryDropdown(true)}
+                  placeholder="Search country..."
+                  className={`w-full h-14 px-5 bg-surface-container-low border-none rounded-xl focus:ring-2 placeholder:text-on-surface-variant/40 text-on-surface font-medium transition-all ${
+                    fieldErrors.country ? 'ring-2 ring-error' : 'focus:ring-primary/20'
+                  }`}
+                  disabled={isLoading}
+                />
+                
+                {/* Dropdown */}
+                {showCountryDropdown && filteredCountries.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-low rounded-xl border border-outline-variant/20 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {filteredCountries.map((country) => (
+                      <button
+                        key={country}
+                        type="button"
+                        onClick={() => selectCountry(country)}
+                        className={`w-full text-left px-5 py-3 hover:bg-surface-container transition-colors ${
+                          formData.country === country ? 'bg-primary/10 text-primary font-semibold' : 'text-on-surface'
+                        }`}
+                      >
+                        {country}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {fieldErrors.country && (
                 <p className="text-xs text-error ml-1 mt-1">{fieldErrors.country}</p>
               )}
