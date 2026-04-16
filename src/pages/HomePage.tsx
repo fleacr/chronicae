@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import Card from '../components/Card'
 
@@ -6,12 +7,20 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('User not authenticated, redirecting to login')
+      navigate('/login', { replace: true })
+    }
+  }, [isLoading, user, navigate])
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <span className="material-symbols-outlined text-6xl text-primary animate-spin">autorenew</span>
-          <p className="text-on-surface-variant">Loading...</p>
+          <p className="text-on-surface-variant">Loading your dashboard...</p>
         </div>
       </div>
     )

@@ -22,26 +22,31 @@ export class AuthService {
         options: {
           data: {
             fullName: data.fullName,
-            country: data.country
+            country: data.country,
+            diseaseName: data.diseaseName || null
           }
         }
       })
 
       if (authError) throw authError
 
-      // Update the profile with additional data
+      // Create user profile
       if (authData.user) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({
-            full_name: data.fullName,
-            country: data.country,
-            disease_name: data.diseaseName || null
-          })
-          .eq('id', authData.user.id)
+          .upsert(
+            {
+              id: authData.user.id,
+              email: data.email,
+              full_name: data.fullName,
+              country: data.country,
+              disease_name: data.diseaseName || null
+            },
+            { onConflict: 'id' }
+          )
 
         if (profileError) {
-          console.warn('Profile update warning:', profileError)
+          console.warn('Profile upsert warning:', profileError)
         }
       }
 
