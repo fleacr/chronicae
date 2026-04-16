@@ -95,7 +95,54 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 ```
 
-## Step 5: Test the Integration
+## Step 5: Set Up Pain Log Table
+
+Add this SQL to create the `pain_logs` table for storing user pain tracking entries:
+
+```sql
+-- Create pain_logs table
+CREATE TABLE IF NOT EXISTS public.pain_logs (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  pain_level INTEGER NOT NULL CHECK (pain_level >= 1 AND pain_level <= 10),
+  description TEXT,
+  tags TEXT[] DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for faster queries
+CREATE INDEX idx_pain_logs_user_id ON public.pain_logs(user_id);
+CREATE INDEX idx_pain_logs_created_at ON public.pain_logs(created_at DESC);
+
+-- Create a trigger to update the updated_at column
+CREATE TRIGGER update_pain_logs_updated_at_trigger
+  BEFORE UPDATE ON public.pain_logs
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.update_profiles_updated_at();
+
+-- Enable Row Level Security
+ALTER TABLE public.pain_logs ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for users to manage their own pain logs
+CREATE POLICY "Users can view their own pain logs"
+  ON public.pain_logs FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own pain logs"
+  ON public.pain_logs FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own pain logs"
+  ON public.pain_logs FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own pain logs"
+  ON public.pain_logs FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+## Step 6: Test the Integration
 
 ### Option A: Using the App
 
@@ -116,7 +163,7 @@ SELECT id, email, created_at FROM auth.users;
 SELECT * FROM public.profiles;
 ```
 
-## Step 6: Configure OAuth (Optional for Social Login)
+## Step 7: Configure OAuth (Optional for Social Login)
 
 If you want to enable Google/Apple login:
 

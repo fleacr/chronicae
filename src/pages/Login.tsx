@@ -49,8 +49,8 @@ export default function Login() {
         password
       })
 
-      // Successfully logged in - redirect to dashboard
-      navigate('/dashboard', { replace: true })
+      // Successfully logged in - redirect to home
+      navigate('/home', { replace: true })
     } catch (err: any) {
       const errorMessage = getAuthErrorMessage(err)
       setError(errorMessage)
