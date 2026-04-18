@@ -12,23 +12,60 @@ export interface PainLogEntry {
 export class PainLogService {
   static async savePainLog(userId: string, data: Omit<PainLogEntry, 'id' | 'user_id' | 'created_at'>) {
     try {
-      const { data: entry, error } = await supabase
+      // Get today's date range
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      // Check if there's already an entry for today
+      const { data: existingEntry, error: fetchError } = await supabase
         .from('pain_logs')
-        .insert([
-          {
-            user_id: userId,
+        .select('id')
+        .eq('user_id', userId)
+        .gte('created_at', today.toISOString())
+        .lt('created_at', tomorrow.toISOString())
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError
+      }
+
+      if (existingEntry) {
+        // Update existing entry for today
+        const { data: entry, error } = await supabase
+          .from('pain_logs')
+          .update({
             pain_level: data.pain_level,
             description: data.description,
             tags: data.tags,
-            created_at: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single()
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingEntry.id)
+          .select()
+          .single()
 
-      if (error) throw error
+        if (error) throw error
+        return entry
+      } else {
+        // Insert new entry
+        const { data: entry, error } = await supabase
+          .from('pain_logs')
+          .insert([
+            {
+              user_id: userId,
+              pain_level: data.pain_level,
+              description: data.description,
+              tags: data.tags,
+              created_at: today.toISOString()
+            }
+          ])
+          .select()
+          .single()
 
-      return entry
+        if (error) throw error
+        return entry
+      }
     } catch (error) {
       console.error('Error saving pain log:', error)
       throw error
