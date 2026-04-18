@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
@@ -23,6 +23,7 @@ const getLast7Days = () => {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isLoading } = useAuth()
   
   // Get the last 7 days array (today will be the last element)
@@ -45,12 +46,12 @@ export default function HomePage() {
     }
   }, [isLoading, user, navigate])
 
-  // Fetch weekly pain log data
+  // Fetch weekly pain log data on mount and when returning from navigation
   useEffect(() => {
     if (!isLoading && user) {
       fetchWeeklyData()
     }
-  }, [user, isLoading])
+  }, [user, isLoading, location.pathname])
 
   const fetchWeeklyData = async () => {
     try {
