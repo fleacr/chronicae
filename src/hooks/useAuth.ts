@@ -11,136 +11,83 @@ export function useAuth() {
   useEffect(() => {
     let isMounted = true
 
-    // Check current session
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
-        setIsLoading(true)
-        const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
-
-        if (error) {
-          if (isMounted) {
-            setError(error.message)
-            setUser(null)
-            setIsLoading(false)
-          }
-          return
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+        
+        if (supabaseUser && isMounted) {
+          await loadProfile(supabaseUser)
+        } else if (isMounted) {
+          setUser(null)
+          setIsLoading(false)
         }
-
-        if (supabaseUser) {
-          await fetchUserProfile(supabaseUser)
-        } else {
-          if (isMounted) {
-            setUser(null)
-            setIsLoading(false)
-          }
-        }
-      } catch (err: any) {
+      } catch (err) {
         if (isMounted) {
-          setError(err?.message || 'Failed to check authentication')
+          console.error('Init auth error:', err)
           setUser(null)
           setIsLoading(false)
         }
       }
     }
 
-    initializeAuth()
+    const loadProfile = async (supabaseUser: SupabaseUser) => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', supabaseUser.id)
+          .single()
 
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        if (session?.user) {
-          await fetchUserProfile(session.user)
-        } else {
-          if (isMounted) {
-            setUser(null)
-            setIsLoading(false)
-          }
+        if (isMounted) {
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            fullName: profile?.full_name || supabaseUser.user_metadata?.fullName || 'User',
+            country: profile?.country || supabaseUser.user_metadata?.country || '',
+            diseaseName: profile?.disease_name || supabaseUser.user_metadata?.diseaseName,
+            createdAt: supabaseUser.created_at || new Date().toISOString()
+          })
+          setError(null)
+        }
+      } catch (err: any) {
+        console.error('Load profile error:', err)
+        if (isMounted) {
+          // Still set user even if profile fetch fails
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            fullName: supabaseUser.user_metadata?.fullName || 'User',
+            country: supabaseUser.user_metadata?.country || '',
+            diseaseName: supabaseUser.user_metadata?.diseaseName,
+            createdAt: supabaseUser.created_at || new Date().toISOString()
+          })
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
         }
       }
-    )
+    }
+
+    initAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
+      if (session?.user) {
+        await loadProfile(session.user)
+      } else {
+        if (isMounted) {
+          setUser(null)
+          setIsLoading(false)
+        }
+      }
+    })
 
     return () => {
       isMounted = false
       subscription?.unsubscribe()
     }
   }, [])
-
-  async function fetchUserProfile(supabaseUser: SupabaseUser, isInitial = true) {
-    if (!isInitial) setIsLoading(true)
-    try {
-      // Fetch user profile from profiles table
-      let { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single()
-
-      // If profile doesn't exist (PGRST116), create one with basic data
-      if (profileError?.code === 'PGRST116') {
-        console.log('Profile not found, creating new one...')
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: supabaseUser.id,
-              email: supabaseUser.email,
-              full_name: supabaseUser.user_metadata?.fullName || 'User',
-              country: supabaseUser.user_metadata?.country || '',
-              disease_name: supabaseUser.user_metadata?.diseaseName || null
-            }
-          ])
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError)
-          // Still set user even if profile creation fails
-        } else {
-          // Fetch the newly created profile
-          const { data: newProfile, error: fetchError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', supabaseUser.id)
-            .single()
-          
-          if (!fetchError) {
-            profile = newProfile
-          }
-        }
-      } else if (profileError) {
-        console.error('Profile fetch error:', profileError)
-        throw profileError
-      }
-
-      // Combine auth user with profile data (or defaults if no profile)
-      const userData: User = {
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: profile?.full_name || supabaseUser.user_metadata?.fullName || 'User',
-        country: profile?.country || supabaseUser.user_metadata?.country || '',
-        diseaseName: profile?.disease_name || supabaseUser.user_metadata?.diseaseName || undefined,
-        createdAt: supabaseUser.created_at || new Date().toISOString()
-      }
-
-      if (isMounted) {
-        setUser(userData)
-        setError(null)
-        setIsLoading(false)
-      }
-    } catch (err: any) {
-      console.error('Fetch profile error:', err)
-      if (isMounted) {
-        setError(err?.message || 'Failed to load user profile')
-        // Set minimal user data so app doesn't break
-        setUser({
-          id: supabaseUser.id,
-          email: supabaseUser.email || '',
-          fullName: 'User',
-          country: '',
-          createdAt: supabaseUser.created_at || new Date().toISOString()
-        })
-        setIsLoading(false)
-      }
-    }
-  }
 
   return { user, isLoading, error }
 }

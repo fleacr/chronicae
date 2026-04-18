@@ -53,21 +53,28 @@ export default function PainLog() {
     setError(null)
 
     try {
-      await PainLogService.savePainLog(user.id, {
+      const result = await PainLogService.savePainLog(user.id, {
         pain_level: painLevel,
         description,
         tags: selectedTags
       })
 
+      if (!result) {
+        throw new Error('Failed to save entry')
+      }
+
       // Reset form after successful save
       setPainLevel(null)
       setDescription('')
       setSelectedTags([])
+      setIsLoading(false)
 
-      // Show success and redirect
-      navigate('/home', { 
-        state: { message: 'Pain entry saved successfully!' }
-      })
+      // Navigate after state is reset
+      setTimeout(() => {
+        navigate('/home', { 
+          state: { message: 'Pain entry saved successfully!' }
+        })
+      }, 100)
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       setError(err?.message || 'Failed to save entry. Please try again.')

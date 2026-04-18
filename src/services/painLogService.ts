@@ -19,21 +19,20 @@ export class PainLogService {
       tomorrow.setDate(tomorrow.getDate() + 1)
 
       // Check if there's already an entry for today
-      const { data: existingEntry, error: fetchError } = await supabase
+      const { data: existingEntries, error: fetchError } = await supabase
         .from('pain_logs')
         .select('id')
         .eq('user_id', userId)
         .gte('created_at', today.toISOString())
         .lt('created_at', tomorrow.toISOString())
-        .single()
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError
       }
 
-      if (existingEntry) {
+      if (existingEntries && existingEntries.length > 0) {
         // Update existing entry for today
-        const { data: entry, error } = await supabase
+        const { data: entries, error } = await supabase
           .from('pain_logs')
           .update({
             pain_level: data.pain_level,
@@ -41,15 +40,14 @@ export class PainLogService {
             tags: data.tags,
             updated_at: new Date().toISOString()
           })
-          .eq('id', existingEntry.id)
+          .eq('id', existingEntries[0].id)
           .select()
-          .single()
 
         if (error) throw error
-        return entry
+        return entries?.[0] || null
       } else {
         // Insert new entry
-        const { data: entry, error } = await supabase
+        const { data: entries, error } = await supabase
           .from('pain_logs')
           .insert([
             {
@@ -61,10 +59,9 @@ export class PainLogService {
             }
           ])
           .select()
-          .single()
 
         if (error) throw error
-        return entry
+        return entries?.[0] || null
       }
     } catch (error) {
       console.error('Error saving pain log:', error)
