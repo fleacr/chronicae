@@ -156,7 +156,7 @@ export class PainLogService {
       // Group by day
       const stats: { [key: string]: number[] } = {}
       data.forEach((entry) => {
-        const day = new Date(entry.created_at).toLocaleDateString('en-US', { weekday: 'short' })
+        const day = new Date(entry.created_at).toLocaleDateString('en-US', { weekday: 'long' })
         if (!stats[day]) stats[day] = []
         stats[day].push(entry.pain_level)
       })
