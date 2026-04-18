@@ -1,11 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { PainLogService } from '../services/painLogService'
 import Card from '../components/Card'
 
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
+  const [weeklyData, setWeeklyData] = useState<{ [key: string]: number }>({
+    'Monday': 0,
+    'Tuesday': 0,
+    'Wednesday': 0,
+    'Thursday': 0,
+    'Friday': 0,
+    'Saturday': 0,
+    'Sunday': 0
+  })
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -14,6 +24,45 @@ export default function HomePage() {
       navigate('/login', { replace: true })
     }
   }, [isLoading, user, navigate])
+
+  // Fetch weekly pain log data
+  useEffect(() => {
+    if (!isLoading && user) {
+      fetchWeeklyData()
+    }
+  }, [user, isLoading])
+
+  const fetchWeeklyData = async () => {
+    try {
+      const stats = await PainLogService.getWeeklyStats(user!.id)
+      
+      // Initialize with 0 values
+      const dailyData: { [key: string]: number } = {
+        'Monday': 0,
+        'Tuesday': 0,
+        'Wednesday': 0,
+        'Thursday': 0,
+        'Friday': 0,
+        'Saturday': 0,
+        'Sunday': 0
+      }
+
+      // Calculate average pain level for each day
+      Object.entries(stats).forEach(([day, painLevels]: [string, number[]]) => {
+        if (painLevels.length > 0) {
+          const avgPain = Math.round(painLevels.reduce((a, b) => a + b, 0) / painLevels.length)
+          dailyData[day] = avgPain
+        }
+      })
+
+      setWeeklyData(dailyData)
+    } catch (error) {
+      console.error('Error fetching weekly stats:', error)
+      // Keep default 0 values
+    } finally {
+      // Keep loading state reset
+    }
+  }
 
   if (isLoading) {
     return (
@@ -155,19 +204,26 @@ export default function HomePage() {
         <section className="mb-12">
           <h3 className="text-2xl font-bold mb-6 text-on-surface">Weekly Resilience</h3>
           <div className="bg-surface-container-low rounded-[2rem] p-8">
-            <div className="flex items-end justify-between h-32 gap-2">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
-                const heights = ['h-16', 'h-20', 'h-24', 'h-12', 'h-32', 'h-4', 'h-2']
+            <div className="flex items-end justify-between h-40 gap-2">
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                const painLevel = weeklyData[day] || 0
+                // Convert pain level (0-10) to height percentage (0-100%)
+                const heightPercent = (painLevel / 10) * 100
+                const dayAbbr = day.substring(0, 1)
+                
                 return (
-                  <div key={day} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full bg-primary/20 rounded-full h-32 relative">
-                      <div
-                        className={`absolute bottom-0 w-full ${heights[idx]} bg-primary-container rounded-full ${
-                          idx === 4 ? 'shadow-lg shadow-primary/20' : ''
-                        }`}
-                      ></div>
+                  <div key={day} className="flex-1 flex flex-col items-center gap-3">
+                    <div className="w-full bg-primary/20 rounded-t-full h-40 relative flex items-end justify-center">
+                      {painLevel > 0 && (
+                        <div
+                          className="w-full bg-gradient-to-t from-primary-container to-primary rounded-t-full transition-all duration-300 flex items-end justify-center pb-2"
+                          style={{ height: `${heightPercent}%` }}
+                        >
+                          <span className="text-[10px] font-bold text-white mb-1">{painLevel}</span>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[10px] font-bold text-on-surface-variant">{day}</span>
+                    <span className="text-[10px] font-bold text-on-surface-variant">{dayAbbr}</span>
                   </div>
                 )
               })}
