@@ -59,6 +59,11 @@ export default function PainLog() {
         tags: selectedTags
       })
 
+      // Reset form after successful save
+      setPainLevel(null)
+      setDescription('')
+      setSelectedTags([])
+
       // Show success and redirect
       navigate('/home', { 
         state: { message: 'Pain entry saved successfully!' }
@@ -66,7 +71,6 @@ export default function PainLog() {
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       setError(err?.message || 'Failed to save entry. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }
