@@ -9,8 +9,41 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+
     // Check current session
-    checkUser()
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true)
+        const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
+
+        if (error) {
+          if (isMounted) {
+            setError(error.message)
+            setUser(null)
+            setIsLoading(false)
+          }
+          return
+        }
+
+        if (supabaseUser) {
+          await fetchUserProfile(supabaseUser)
+        } else {
+          if (isMounted) {
+            setUser(null)
+            setIsLoading(false)
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err?.message || 'Failed to check authentication')
+          setUser(null)
+          setIsLoading(false)
+        }
+      }
+    }
+
+    initializeAuth()
 
     // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -18,42 +51,25 @@ export function useAuth() {
         if (session?.user) {
           await fetchUserProfile(session.user)
         } else {
-          setUser(null)
+          if (isMounted) {
+            setUser(null)
+            setIsLoading(false)
+          }
         }
       }
     )
 
     return () => {
+      isMounted = false
       subscription?.unsubscribe()
     }
   }, [])
 
-  async function checkUser() {
-    try {
-      setIsLoading(true)
-      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
-
-      if (error) {
-        setError(error.message)
-        setUser(null)
-        return
-      }
-
-      if (supabaseUser) {
-        await fetchUserProfile(supabaseUser)
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to check authentication')
-      setUser(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  async function fetchUserProfile(supabaseUser: SupabaseUser) {
+  async function fetchUserProfile(supabaseUser: SupabaseUser, isInitial = true) {
+    if (!isInitial) setIsLoading(true)
     try {
       // Fetch user profile from profiles table
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supabaseUser.id)
@@ -77,6 +93,17 @@ export function useAuth() {
         if (insertError) {
           console.error('Error creating profile:', insertError)
           // Still set user even if profile creation fails
+        } else {
+          // Fetch the newly created profile
+          const { data: newProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', supabaseUser.id)
+            .single()
+          
+          if (!fetchError) {
+            profile = newProfile
+          }
         }
       } else if (profileError) {
         console.error('Profile fetch error:', profileError)
@@ -93,21 +120,25 @@ export function useAuth() {
         createdAt: supabaseUser.created_at || new Date().toISOString()
       }
 
-      setUser(userData)
-      setError(null)
+      if (isMounted) {
+        setUser(userData)
+        setError(null)
+        setIsLoading(false)
+      }
     } catch (err: any) {
       console.error('Fetch profile error:', err)
-      setError(err?.message || 'Failed to load user profile')
-      // Set minimal user data so app doesn't break
-      setUser({
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: 'User',
-        country: '',
-        createdAt: supabaseUser.created_at || new Date().toISOString()
-      })
-    } finally {
-      setIsLoading(false)
+      if (isMounted) {
+        setError(err?.message || 'Failed to load user profile')
+        // Set minimal user data so app doesn't break
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          fullName: 'User',
+          country: '',
+          createdAt: supabaseUser.created_at || new Date().toISOString()
+        })
+        setIsLoading(false)
+      }
     }
   }
 
