@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
+import { AuthService } from '../services/authService'
 import Card from '../components/Card'
 
 // Helper function to get the last 7 days ending with today
@@ -24,6 +25,8 @@ const getLast7Days = () => {
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
   
   // Get the last 7 days array (today will be the last element)
   const last7Days = useMemo(() => getLast7Days(), [])
@@ -51,6 +54,29 @@ export default function HomePage() {
       fetchWeeklyData()
     }
   }, [user, isLoading])
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false)
+      }
+    }
+
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileMenu])
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   const fetchWeeklyData = async () => {
     try {
@@ -113,14 +139,29 @@ export default function HomePage() {
             <button className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:opacity-80 transition-opacity">
               <span className="material-symbols-outlined">notifications</span>
             </button>
-            <button
-              onClick={() => navigate('/profile')}
-              className="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden hover:opacity-80 transition-opacity"
-            >
-              <div className="w-full h-full bg-primary-fixed flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary">person</span>
-              </div>
-            </button>
+            <div ref={profileMenuRef} className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden hover:opacity-80 transition-opacity"
+              >
+                <div className="w-full h-full bg-primary-fixed flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">person</span>
+                </div>
+              </button>
+              
+              {/* Profile Dropdown Menu */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-surface-container-high rounded-xl shadow-lg py-2 z-50">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-3 text-on-surface hover:bg-surface-container-highest flex items-center gap-2 transition-colors text-left"
+                  >
+                    <span className="material-symbols-outlined text-lg">logout</span>
+                    <span className="font-medium">Log out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
