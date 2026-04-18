@@ -1,20 +1,40 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
 import Card from '../components/Card'
 
+// Helper function to get the last 7 days ending with today
+const getLast7Days = () => {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const today = new Date()
+  const last7Days = []
+  
+  // Get the last 7 days ending with today
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const dayIndex = date.getDay()
+    last7Days.push(dayNames[dayIndex])
+  }
+  
+  return last7Days
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
-  const [weeklyData, setWeeklyData] = useState<{ [key: string]: number }>({
-    'Monday': 0,
-    'Tuesday': 0,
-    'Wednesday': 0,
-    'Thursday': 0,
-    'Friday': 0,
-    'Saturday': 0,
-    'Sunday': 0
+  
+  // Get the last 7 days array (today will be the last element)
+  const last7Days = useMemo(() => getLast7Days(), [])
+  
+  // Initialize weeklyData with the actual 7-day sequence
+  const [weeklyData, setWeeklyData] = useState<{ [key: string]: number }>(() => {
+    const initialData: { [key: string]: number } = {}
+    last7Days.forEach(day => {
+      initialData[day] = 0
+    })
+    return initialData
   })
 
   // Redirect to login if not authenticated
@@ -36,16 +56,11 @@ export default function HomePage() {
     try {
       const stats = await PainLogService.getWeeklyStats(user!.id)
       
-      // Initialize with 0 values
-      const dailyData: { [key: string]: number } = {
-        'Monday': 0,
-        'Tuesday': 0,
-        'Wednesday': 0,
-        'Thursday': 0,
-        'Friday': 0,
-        'Saturday': 0,
-        'Sunday': 0
-      }
+      // Initialize with 0 values for the last 7 days
+      const dailyData: { [key: string]: number } = {}
+      last7Days.forEach(day => {
+        dailyData[day] = 0
+      })
 
       // Calculate average pain level for each day
       Object.entries(stats).forEach(([day, painLevels]: [string, number[]]) => {
@@ -205,7 +220,7 @@ export default function HomePage() {
           <h3 className="text-2xl font-bold mb-6 text-on-surface">Weekly Resilience</h3>
           <div className="bg-surface-container-low rounded-[2rem] p-8">
             <div className="flex items-end justify-between h-40 gap-2">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+              {last7Days.map((day) => {
                 const painLevel = weeklyData[day] || 0
                 // Convert pain level (0-10) to height percentage (0-100%)
                 const heightPercent = (painLevel / 10) * 100
