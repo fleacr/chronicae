@@ -27,6 +27,7 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [sessionChecked, setSessionChecked] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   
   // Get the last 7 days array (today will be the last element)
@@ -49,7 +50,10 @@ export default function HomePage() {
         if (!session) {
           console.log('No session found, redirecting to login')
           navigate('/login', { replace: true })
+        } else {
+          console.log('Session confirmed, staying on page')
         }
+        setSessionChecked(true)
       }
     }
     checkSession()
@@ -112,7 +116,7 @@ export default function HomePage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || !sessionChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
