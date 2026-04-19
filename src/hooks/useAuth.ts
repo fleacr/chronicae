@@ -10,63 +10,38 @@ export function useAuth() {
   useEffect(() => {
     let isMounted = true
     let isProfileFetching = false
-    let authTimeout: NodeJS.Timeout
+    let authTimeout: NodeJS.Timeout | null = null
 
-    const initAuth = async () => {
-      try {
-        const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-        
-        if (!isMounted) return
-
-        if (supabaseUser && !isProfileFetching) {
-          isProfileFetching = true
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', supabaseUser.id)
-            .single()
-
-          if (!isMounted) return
-
-          setUser({
-            id: supabaseUser.id,
-            email: supabaseUser.email || '',
-            fullName: profile?.full_name || supabaseUser.user_metadata?.fullName || 'User',
-            country: profile?.country || supabaseUser.user_metadata?.country || '',
-            diseaseName: profile?.disease_name || supabaseUser.user_metadata?.diseaseName,
-            createdAt: supabaseUser.created_at || new Date().toISOString()
-          })
-          isProfileFetching = false
-        } else {
-          setUser(null)
-        }
-      } catch (err) {
-        console.error('Auth init error:', err)
-        if (isMounted) {
-          setUser(null)
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    // Set a timeout to ensure loading completes
+    // Set a timeout to ensure loading completes (increased to 10s)
     authTimeout = setTimeout(() => {
       if (isMounted) {
+        console.log('Auth timeout reached, forcing loading to complete')
         setIsLoading(false)
       }
-    }, 5000)
+    }, 10000)
 
-    initAuth()
-
-    // Listen for auth changes
+    // Listen for auth changes - this is the main source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
 
       if (session?.user && !isProfileFetching) {
         isProfileFetching = true
+        
+        // Create user with auth data first
+        const baseUser: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          fullName: session.user.user_metadata?.fullName || 'User',
+          country: session.user.user_metadata?.country || '',
+          diseaseName: session.user.user_metadata?.diseaseName,
+          createdAt: session.user.created_at || new Date().toISOString()
+        }
+
+        // Set user immediately with auth data
+        setUser(baseUser)
+        setIsLoading(false)
+
+        // Try to enhance with profile data (but don't block)
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -74,25 +49,20 @@ export function useAuth() {
             .eq('id', session.user.id)
             .single()
 
-          if (!isMounted) return
-
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            fullName: profile?.full_name || session.user.user_metadata?.fullName || 'User',
-            country: profile?.country || session.user.user_metadata?.country || '',
-            diseaseName: profile?.disease_name || session.user.user_metadata?.diseaseName,
-            createdAt: session.user.created_at || new Date().toISOString()
-          })
-          setIsLoading(false)
-        } catch (err) {
-          console.error('Profile fetch error:', err)
-          if (isMounted) {
-            setIsLoading(false)
+          if (isMounted && profile) {
+            setUser({
+              ...baseUser,
+              fullName: profile.full_name || baseUser.fullName,
+              country: profile.country || baseUser.country,
+              diseaseName: profile.disease_name || baseUser.diseaseName
+            })
           }
-        } finally {
-          isProfileFetching = false
+        } catch (profileErr) {
+          console.warn('Profile fetch failed, using auth data:', profileErr)
+          // Keep baseUser as is
         }
+
+        isProfileFetching = false
       } else if (!session?.user) {
         setUser(null)
         setIsLoading(false)
@@ -101,7 +71,9 @@ export function useAuth() {
 
     return () => {
       isMounted = false
-      clearTimeout(authTimeout)
+      if (authTimeout) {
+        clearTimeout(authTimeout)
+      }
       subscription?.unsubscribe()
     }
   }, [])

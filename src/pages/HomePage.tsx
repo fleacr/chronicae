@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
 import { AuthService } from '../services/authService'
+import { supabase } from '../services/supabaseClient'
 import Card from '../components/Card'
 
 // Helper function to get the last 7 days ending with today
@@ -40,13 +41,19 @@ export default function HomePage() {
     return initialData
   })
 
-  // Redirect to login if not authenticated
+  // Redirect to login only after we confirm no session exists
   useEffect(() => {
-    if (!isLoading && !user) {
-      console.log('User not authenticated, redirecting to login')
-      navigate('/login', { replace: true })
+    const checkSession = async () => {
+      if (!isLoading) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          console.log('No session found, redirecting to login')
+          navigate('/login', { replace: true })
+        }
+      }
     }
-  }, [isLoading, user, navigate])
+    checkSession()
+  }, [isLoading, navigate])
 
   // Fetch weekly pain log data on mount
   useEffect(() => {
