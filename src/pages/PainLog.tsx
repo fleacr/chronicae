@@ -67,14 +67,11 @@ export default function PainLog() {
       setPainLevel(null)
       setDescription('')
       setSelectedTags([])
-      setIsLoading(false)
 
-      // Navigate after state is reset
-      setTimeout(() => {
-        navigate('/home', { 
-          state: { message: 'Pain entry saved successfully!' }
-        })
-      }, 100)
+      // Navigate immediately
+      navigate('/home', { 
+        state: { message: 'Pain entry saved successfully!' }
+      })
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       setError(err?.message || 'Failed to save entry. Please try again.')

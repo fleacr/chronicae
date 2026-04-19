@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { User as SupabaseUser } from '@supabase/supabase-js'
 import { supabase } from '../services/supabaseClient'
 import { User } from '../types/auth'
 
@@ -10,57 +9,42 @@ export function useAuth() {
 
   useEffect(() => {
     let isMounted = true
+    let isProfileFetching = false
 
     const initAuth = async () => {
       try {
         const { data: { user: supabaseUser } } = await supabase.auth.getUser()
         
-        if (supabaseUser && isMounted) {
-          await loadProfile(supabaseUser)
-        } else if (isMounted) {
+        if (!isMounted) return
+
+        if (supabaseUser) {
+          if (!isProfileFetching) {
+            isProfileFetching = true
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', supabaseUser.id)
+              .single()
+
+            if (!isMounted) return
+
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || '',
+              fullName: profile?.full_name || supabaseUser.user_metadata?.fullName || 'User',
+              country: profile?.country || supabaseUser.user_metadata?.country || '',
+              diseaseName: profile?.disease_name || supabaseUser.user_metadata?.diseaseName,
+              createdAt: supabaseUser.created_at || new Date().toISOString()
+            })
+            isProfileFetching = false
+          }
+        } else {
           setUser(null)
-          setIsLoading(false)
         }
       } catch (err) {
+        console.error('Auth init error:', err)
         if (isMounted) {
-          console.error('Init auth error:', err)
           setUser(null)
-          setIsLoading(false)
-        }
-      }
-    }
-
-    const loadProfile = async (supabaseUser: SupabaseUser) => {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', supabaseUser.id)
-          .single()
-
-        if (isMounted) {
-          setUser({
-            id: supabaseUser.id,
-            email: supabaseUser.email || '',
-            fullName: profile?.full_name || supabaseUser.user_metadata?.fullName || 'User',
-            country: profile?.country || supabaseUser.user_metadata?.country || '',
-            diseaseName: profile?.disease_name || supabaseUser.user_metadata?.diseaseName,
-            createdAt: supabaseUser.created_at || new Date().toISOString()
-          })
-          setError(null)
-        }
-      } catch (err: any) {
-        console.error('Load profile error:', err)
-        if (isMounted) {
-          // Still set user even if profile fetch fails
-          setUser({
-            id: supabaseUser.id,
-            email: supabaseUser.email || '',
-            fullName: supabaseUser.user_metadata?.fullName || 'User',
-            country: supabaseUser.user_metadata?.country || '',
-            diseaseName: supabaseUser.user_metadata?.diseaseName,
-            createdAt: supabaseUser.created_at || new Date().toISOString()
-          })
         }
       } finally {
         if (isMounted) {
@@ -72,14 +56,37 @@ export function useAuth() {
     initAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return
+
       if (session?.user) {
-        await loadProfile(session.user)
-      } else {
-        if (isMounted) {
-          setUser(null)
-          setIsLoading(false)
+        if (!isProfileFetching) {
+          isProfileFetching = true
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+
+            if (!isMounted) return
+
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              fullName: profile?.full_name || session.user.user_metadata?.fullName || 'User',
+              country: profile?.country || session.user.user_metadata?.country || '',
+              diseaseName: profile?.disease_name || session.user.user_metadata?.diseaseName,
+              createdAt: session.user.created_at || new Date().toISOString()
+            })
+            setIsLoading(false)
+          } finally {
+            isProfileFetching = false
+          }
         }
+      } else {
+        setUser(null)
+        setIsLoading(false)
       }
     })
 
