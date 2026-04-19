@@ -12,22 +12,82 @@ export function useAuth() {
     let isProfileFetching = false
     let authTimeout: NodeJS.Timeout | null = null
 
-    // Set a timeout to ensure loading completes (increased to 10s)
+    const initAuth = async () => {
+      try {
+        // Get current session immediately
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!isMounted) return
+
+        if (session?.user) {
+          // User exists - set immediately with auth data
+          const baseUser: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            fullName: session.user.user_metadata?.fullName || 'User',
+            country: session.user.user_metadata?.country || '',
+            diseaseName: session.user.user_metadata?.diseaseName,
+            createdAt: session.user.created_at || new Date().toISOString()
+          }
+
+          setUser(baseUser)
+          
+          // Try to fetch full profile (non-blocking)
+          if (!isProfileFetching) {
+            isProfileFetching = true
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
+
+              if (isMounted && profile) {
+                setUser({
+                  ...baseUser,
+                  fullName: profile.full_name || baseUser.fullName,
+                  country: profile.country || baseUser.country,
+                  diseaseName: profile.disease_name || baseUser.diseaseName
+                })
+              }
+            } catch (profileErr) {
+              console.warn('Profile fetch failed:', profileErr)
+            } finally {
+              isProfileFetching = false
+            }
+          }
+        } else {
+          // No session
+          setUser(null)
+        }
+      } catch (err) {
+        console.error('Auth init error:', err)
+        setUser(null)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    // Initialize immediately
+    initAuth()
+
+    // Set timeout as safety net (5 seconds)
     authTimeout = setTimeout(() => {
-      if (isMounted) {
-        console.log('Auth timeout reached, forcing loading to complete')
+      if (isMounted && isLoading) {
+        console.log('Auth timeout - forcing loading complete')
         setIsLoading(false)
       }
-    }, 10000)
+    }, 5000)
 
-    // Listen for auth changes - this is the main source of truth
+    // Also listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
 
       if (session?.user && !isProfileFetching) {
         isProfileFetching = true
         
-        // Create user with auth data first
         const baseUser: User = {
           id: session.user.id,
           email: session.user.email || '',
@@ -37,11 +97,10 @@ export function useAuth() {
           createdAt: session.user.created_at || new Date().toISOString()
         }
 
-        // Set user immediately with auth data
         setUser(baseUser)
         setIsLoading(false)
 
-        // Try to enhance with profile data (but don't block)
+        // Enhance with profile
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -58,8 +117,7 @@ export function useAuth() {
             })
           }
         } catch (profileErr) {
-          console.warn('Profile fetch failed, using auth data:', profileErr)
-          // Keep baseUser as is
+          console.warn('Profile listener fetch failed:', profileErr)
         }
 
         isProfileFetching = false
