@@ -6,21 +6,28 @@ import { AuthService } from '../services/authService'
 import { supabase } from '../services/supabaseClient'
 import Card from '../components/Card'
 
-// Helper function to get the last 7 days ending with today
+// Helper function to get the last 7 days ending with today (as YYYY-MM-DD)
 const getLast7Days = () => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const today = new Date()
   const last7Days = []
+  const today = new Date()
   
   // Get the last 7 days ending with today
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today)
     date.setDate(date.getDate() - i)
-    const dayIndex = date.getDay()
-    last7Days.push(dayNames[dayIndex])
+    // Format as YYYY-MM-DD
+    const dateKey = date.toISOString().split('T')[0]
+    last7Days.push(dateKey)
   }
   
   return last7Days
+}
+
+// Helper function to get day abbreviation from date string (YYYY-MM-DD)
+const getDayAbbr = (dateStr: string): string => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const date = new Date(dateStr + 'T00:00:00Z')
+  return dayNames[date.getUTCDay()]
 }
 
 export default function HomePage() {
@@ -116,7 +123,9 @@ export default function HomePage() {
 
   const fetchWeeklyData = async () => {
     try {
+      console.log('Fetching weekly data for user:', user?.id)
       const stats = await PainLogService.getWeeklyStats(user!.id)
+      console.log('Weekly stats received:', stats)
       
       // Only update state if component is still mounted
       if (!isMountedRef.current) return
@@ -127,13 +136,19 @@ export default function HomePage() {
         dailyData[day] = 0
       })
 
+      console.log('Last 7 days:', last7Days)
+      console.log('Initial data:', dailyData)
+
       // Calculate average pain level for each day
       Object.entries(stats).forEach(([day, painLevels]: [string, number[]]) => {
+        console.log(`Day: ${day}, Pain levels:`, painLevels)
         if (painLevels.length > 0) {
           const avgPain = Math.round(painLevels.reduce((a, b) => a + b, 0) / painLevels.length)
           dailyData[day] = avgPain
         }
       })
+
+      console.log('Final daily data:', dailyData)
 
       if (isMountedRef.current) {
         setWeeklyData(dailyData)
@@ -300,7 +315,7 @@ export default function HomePage() {
                 const painLevel = weeklyData[day] || 0
                 // Convert pain level (0-10) to height percentage (0-100%)
                 const heightPercent = (painLevel / 10) * 100
-                const dayAbbr = day.substring(0, 1)
+                const dayAbbr = getDayAbbr(day)
                 
                 return (
                   <div key={day} className="flex-1 flex flex-col items-center gap-3">

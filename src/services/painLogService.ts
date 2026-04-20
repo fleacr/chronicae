@@ -139,7 +139,8 @@ export class PainLogService {
   static async getWeeklyStats(userId: string) {
     try {
       const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6) // Last 7 days including today
+      sevenDaysAgo.setHours(0, 0, 0, 0)
 
       const { data, error } = await supabase
         .from('pain_logs')
@@ -150,14 +151,19 @@ export class PainLogService {
 
       if (error) throw error
 
-      // Group by day
+      // Group by date (YYYY-MM-DD) instead of day name
       const stats: { [key: string]: number[] } = {}
+      
       data.forEach((entry) => {
-        const day = new Date(entry.created_at).toLocaleDateString('en-US', { weekday: 'long' })
-        if (!stats[day]) stats[day] = []
-        stats[day].push(entry.pain_level)
+        // Get date in YYYY-MM-DD format
+        const entryDate = new Date(entry.created_at)
+        const dateKey = entryDate.toISOString().split('T')[0]
+        
+        if (!stats[dateKey]) stats[dateKey] = []
+        stats[dateKey].push(entry.pain_level)
       })
 
+      console.log('getWeeklyStats result:', stats)
       return stats
     } catch (error) {
       console.error('Error fetching weekly stats:', error)
