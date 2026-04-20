@@ -25,7 +25,7 @@ const getLast7Days = () => {
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { user, isLoading } = useAuth()
+  const { user } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
@@ -84,12 +84,12 @@ export default function HomePage() {
     }
   }, [navigate])
 
-  // Fetch weekly pain log data on mount
+  // Fetch weekly pain log data when user is available
   useEffect(() => {
-    if (!isLoading && user) {
+    if (user && sessionChecked) {
       fetchWeeklyData()
     }
-  }, [user, isLoading])
+  }, [user, sessionChecked])
 
   // Close profile menu when clicking outside
   useEffect(() => {

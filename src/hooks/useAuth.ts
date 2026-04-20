@@ -5,12 +5,11 @@ import { User } from '../types/auth'
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
     let isProfileFetching = false
-    let authTimeout: NodeJS.Timeout | null = null
+    let authTimeout: ReturnType<typeof setTimeout> | null = null
 
     const initAuth = async () => {
       try {
@@ -82,7 +81,7 @@ export function useAuth() {
     }, 10000)
 
     // Also listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return
 
       if (session?.user && !isProfileFetching) {
@@ -136,5 +135,5 @@ export function useAuth() {
     }
   }, [])
 
-  return { user, isLoading, error }
+  return { user, isLoading }
 }
