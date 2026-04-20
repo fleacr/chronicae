@@ -29,6 +29,7 @@ export default function HomePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
+  const isMountedRef = useRef(true)
   
   // Get the last 7 days array (today will be the last element)
   const last7Days = useMemo(() => getLast7Days(), [])
@@ -42,18 +43,31 @@ export default function HomePage() {
     return initialData
   })
 
+  // Track mount/unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   // Redirect to login only after we confirm no session exists
   useEffect(() => {
     const checkSession = async () => {
       if (!isLoading) {
         const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!isMountedRef.current) return
+
         if (!session) {
           console.log('No session found, redirecting to login')
           navigate('/login', { replace: true })
         } else {
           console.log('Session confirmed, staying on page')
         }
-        setSessionChecked(true)
+        
+        if (isMountedRef.current) {
+          setSessionChecked(true)
+        }
       }
     }
     checkSession()
@@ -93,6 +107,9 @@ export default function HomePage() {
     try {
       const stats = await PainLogService.getWeeklyStats(user!.id)
       
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) return
+
       // Initialize with 0 values for the last 7 days
       const dailyData: { [key: string]: number } = {}
       last7Days.forEach(day => {
@@ -107,12 +124,12 @@ export default function HomePage() {
         }
       })
 
-      setWeeklyData(dailyData)
+      if (isMountedRef.current) {
+        setWeeklyData(dailyData)
+      }
     } catch (error) {
       console.error('Error fetching weekly stats:', error)
       // Keep default 0 values
-    } finally {
-      // Keep loading state reset
     }
   }
 
