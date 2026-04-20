@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
 import Button from '../components/Button'
@@ -7,6 +7,7 @@ import Button from '../components/Button'
 export default function PainLog() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
+  const isMountedRef = useRef(true)
   const [painLevel, setPainLevel] = useState<number | null>(null)
   const [description, setDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -15,11 +16,19 @@ export default function PainLog() {
 
   const painTags = ['Sharp', 'Dull Ache', 'Throbbing', 'Radiating', 'Burning', 'Tingling', 'Numbness', 'Cramping']
 
-  // Redirect to login if not authenticated
-  if (!authLoading && !user) {
-    navigate('/login', { replace: true })
-    return null
-  }
+  // Track mount/unmount to prevent setState after unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  // Redirect to login if not authenticated - use useEffect to prevent render-time navigation
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true })
+    }
+  }, [authLoading, user, navigate])
 
   if (authLoading) {
     return (
@@ -40,17 +49,19 @@ export default function PainLog() {
 
   const handleSave = async () => {
     if (!user) {
-      setError('User not authenticated')
+      if (isMountedRef.current) setError('User not authenticated')
       return
     }
 
     if (painLevel === null) {
-      setError('Please select a pain level')
+      if (isMountedRef.current) setError('Please select a pain level')
       return
     }
 
-    setIsLoading(true)
-    setError(null)
+    if (isMountedRef.current) {
+      setIsLoading(true)
+      setError(null)
+    }
 
     try {
       const result = await PainLogService.savePainLog(user.id, {
@@ -63,19 +74,24 @@ export default function PainLog() {
         throw new Error('Failed to save entry')
       }
 
-      // Reset form after successful save
-      setPainLevel(null)
-      setDescription('')
-      setSelectedTags([])
+      // Only navigate if component is still mounted
+      if (isMountedRef.current) {
+        // Reset form after successful save
+        setPainLevel(null)
+        setDescription('')
+        setSelectedTags([])
 
-      // Navigate immediately
-      navigate('/home', { 
-        state: { message: 'Pain entry saved successfully!' }
-      })
+        // Navigate immediately
+        navigate('/home', { 
+          state: { message: 'Pain entry saved successfully!' }
+        })
+      }
     } catch (err: any) {
       console.error('Error saving pain log:', err)
-      setError(err?.message || 'Failed to save entry. Please try again.')
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setError(err?.message || 'Failed to save entry. Please try again.')
+        setIsLoading(false)
+      }
     }
   }
 
