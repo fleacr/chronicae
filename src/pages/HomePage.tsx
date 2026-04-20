@@ -52,26 +52,37 @@ export default function HomePage() {
 
   // Redirect to login only after we confirm no session exists
   useEffect(() => {
+    let isEffectMounted = true
+
     const checkSession = async () => {
-      if (!isLoading) {
+      try {
         const { data: { session } } = await supabase.auth.getSession()
         
-        if (!isMountedRef.current) return
+        if (!isEffectMounted) return
 
         if (!session) {
           console.log('No session found, redirecting to login')
           navigate('/login', { replace: true })
         } else {
-          console.log('Session confirmed, staying on page')
+          console.log('Session confirmed, user authenticated')
         }
-        
-        if (isMountedRef.current) {
+      } catch (err) {
+        console.error('Session check error:', err)
+      } finally {
+        // Always mark as checked, whether session exists or not
+        if (isEffectMounted) {
           setSessionChecked(true)
         }
       }
     }
+
+    // Check session immediately on mount
     checkSession()
-  }, [isLoading, navigate])
+
+    return () => {
+      isEffectMounted = false
+    }
+  }, [navigate])
 
   // Fetch weekly pain log data on mount
   useEffect(() => {
@@ -133,7 +144,7 @@ export default function HomePage() {
     }
   }
 
-  if (isLoading || !sessionChecked) {
+  if (!sessionChecked || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -142,10 +153,6 @@ export default function HomePage() {
         </div>
       </div>
     )
-  }
-
-  if (!user) {
-    return null
   }
 
   return (

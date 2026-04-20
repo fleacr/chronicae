@@ -73,13 +73,13 @@ export function useAuth() {
     // Initialize immediately
     initAuth()
 
-    // Set timeout as safety net (5 seconds)
+    // Set timeout as safety net (10 seconds - longer to allow profile fetch)
     authTimeout = setTimeout(() => {
       if (isMounted && isLoading) {
         console.log('Auth timeout - forcing loading complete')
         setIsLoading(false)
       }
-    }, 5000)
+    }, 10000)
 
     // Also listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
