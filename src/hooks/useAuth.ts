@@ -10,6 +10,7 @@ export function useAuth() {
     let isMounted = true
     let isProfileFetching = false
     let authTimeout: ReturnType<typeof setTimeout> | null = null
+    let keepAliveInterval: ReturnType<typeof setInterval> | null = null
 
     const initAuth = async () => {
       try {
@@ -80,6 +81,20 @@ export function useAuth() {
       }
     }, 10000)
 
+    // Keep-alive: refresh session every 3 minutes to prevent logout on idle
+    keepAliveInterval = setInterval(async () => {
+      if (isMounted) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user && isMounted) {
+            console.log('Session keep-alive: refreshed')
+          }
+        } catch (err) {
+          console.warn('Keep-alive refresh error:', err)
+        }
+      }
+    }, 3 * 60 * 1000) // Every 3 minutes
+
     // Also listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return
@@ -130,6 +145,9 @@ export function useAuth() {
       isMounted = false
       if (authTimeout) {
         clearTimeout(authTimeout)
+      }
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval)
       }
       subscription?.unsubscribe()
     }
