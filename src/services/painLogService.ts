@@ -12,13 +12,13 @@ export interface PainLogEntry {
 export class PainLogService {
   static async savePainLog(userId: string, data: Omit<PainLogEntry, 'id' | 'user_id' | 'created_at'>) {
     try {
-      // Get today's date in YYYY-MM-DD format (local timezone)
+      // Get today's date in UTC YYYY-MM-DD format
       const today = new Date()
-      const dateKey = today.toISOString().split('T')[0]
+      const dateKey = today.toISOString().split('T')[0]  // "2026-04-22"
       
       // Create start and end of today in UTC for querying
       const todayStart = new Date(dateKey + 'T00:00:00Z')
-      const tomorrowStart = new Date(todayStart)
+      const tomorrowStart = new Date(dateKey + 'T00:00:00Z')
       tomorrowStart.setDate(tomorrowStart.getDate() + 1)
 
       console.log('Saving pain log for date:', dateKey, 'User:', userId)
@@ -153,9 +153,16 @@ export class PainLogService {
 
   static async getWeeklyStats(userId: string) {
     try {
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6) // Last 7 days including today
-      sevenDaysAgo.setHours(0, 0, 0, 0)
+      // Get today's date in UTC (YYYY-MM-DD)
+      const today = new Date()
+      const todayStr = today.toISOString().split('T')[0]
+      
+      // Calculate 6 days ago (so we get last 7 days including today)
+      const todayUTC = new Date(todayStr + 'T00:00:00Z')
+      const sevenDaysAgo = new Date(todayUTC)
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+
+      console.log('Fetching stats from', sevenDaysAgo.toISOString(), 'to today')
 
       const { data, error } = await supabase
         .from('pain_logs')
@@ -166,19 +173,21 @@ export class PainLogService {
 
       if (error) throw error
 
-      // Group by date (YYYY-MM-DD) instead of day name
+      // Group by date (YYYY-MM-DD) using UTC
       const stats: { [key: string]: number[] } = {}
       
       data.forEach((entry) => {
-        // Get date in YYYY-MM-DD format
+        // Parse the UTC timestamp and extract date in UTC
         const entryDate = new Date(entry.created_at)
         const dateKey = entryDate.toISOString().split('T')[0]
+        
+        console.log('Entry:', dateKey, 'Pain:', entry.pain_level)
         
         if (!stats[dateKey]) stats[dateKey] = []
         stats[dateKey].push(entry.pain_level)
       })
 
-      console.log('getWeeklyStats result:', stats)
+      console.log('Final weekly stats:', stats)
       return stats
     } catch (error) {
       console.error('Error fetching weekly stats:', error)

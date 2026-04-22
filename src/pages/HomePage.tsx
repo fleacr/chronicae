@@ -6,20 +6,24 @@ import { AuthService } from '../services/authService'
 import { supabase } from '../services/supabaseClient'
 import Card from '../components/Card'
 
-// Helper function to get the last 7 days ending with today (as YYYY-MM-DD)
+// Helper function to get the last 7 days ending with today (as YYYY-MM-DD in UTC)
 const getLast7Days = () => {
   const last7Days = []
   const today = new Date()
   
-  // Get the last 7 days ending with today
+  // Get today's UTC date string (YYYY-MM-DD)
+  const todayStr = today.toISOString().split('T')[0]
+  const todayUTC = new Date(todayStr + 'T00:00:00Z')
+  
+  // Get the last 7 days ending with today (including today)
   for (let i = 6; i >= 0; i--) {
-    const date = new Date(today)
+    const date = new Date(todayUTC)
     date.setDate(date.getDate() - i)
-    // Format as YYYY-MM-DD
     const dateKey = date.toISOString().split('T')[0]
     last7Days.push(dateKey)
   }
   
+  console.log('Last 7 days:', last7Days)
   return last7Days
 }
 

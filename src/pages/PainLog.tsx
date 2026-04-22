@@ -88,20 +88,22 @@ export default function PainLog() {
         throw new Error('Failed to save entry - no result returned')
       }
 
-      console.log('Save successful, navigating to home')
-
-      // Only navigate if component is still mounted
-      if (isMountedRef.current) {
-        // Reset form after successful save
-        setPainLevel(null)
-        setDescription('')
-        setSelectedTags([])
-
-        // Navigate immediately
+      console.log('Save successful, isMountedRef.current:', isMountedRef.current)
+      
+      // Reset form regardless of mount status
+      setPainLevel(null)
+      setDescription('')
+      setSelectedTags([])
+      
+      console.log('Form reset, about to navigate')
+      
+      // Navigate - don't check isMounted for this critical action
+      setTimeout(() => {
+        console.log('Navigating to /home now')
         navigate('/home', { 
           state: { message: 'Pain entry saved successfully!' }
         })
-      }
+      }, 100)
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       if (isMountedRef.current) {
