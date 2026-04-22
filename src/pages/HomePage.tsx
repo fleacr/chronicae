@@ -3,8 +3,8 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
 import { AuthService } from '../services/authService'
-import { supabase } from '../services/supabaseClient'
 import Card from '../components/Card'
+import { Navigate } from 'react-router-dom'
 
 // Helper function to get the last 7 days ending with today (as YYYY-MM-DD in UTC)
 const getLast7Days = () => {
@@ -35,10 +35,8 @@ const getDayAbbr = (dateStr: string): string => {
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [sessionChecked, setSessionChecked] = useState(false)
-  const [forceRender, setForceRender] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const isMountedRef = useRef(true)
   
@@ -61,54 +59,13 @@ export default function HomePage() {
     }
   }, [])
 
-  // Safety timeout to prevent infinite loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (isMountedRef.current) {
-        setForceRender(true)
-      }
-    }, 5000) // 5 second safety net
 
-    return () => clearTimeout(timeout)
-  }, [])
 
-  // Redirect to login only after we confirm no session exists
-  useEffect(() => {
-    let isEffectMounted = true
-
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!isEffectMounted) return
-
-        if (!session) {
-          navigate('/login', { replace: true })
-        }
-      } catch (err) {
-        console.error('Session check error:', err)
-      } finally {
-        // Always mark as checked, whether session exists or not
-        if (isEffectMounted) {
-          setSessionChecked(true)
-        }
-      }
-    }
-
-    // Check session immediately on mount
-    checkSession()
-
-    return () => {
-      isEffectMounted = false
-    }
-  }, [navigate])
-
-  // Fetch weekly pain log data when user is available
-  useEffect(() => {
-    if (user && sessionChecked) {
-      fetchWeeklyData()
-    }
-  }, [user, sessionChecked])
+useEffect(() => {
+  if (user) {
+    fetchWeeklyData()
+  }
+}, [user])
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -159,22 +116,16 @@ export default function HomePage() {
     }
   }
 
-  if (!sessionChecked || (!user && !forceRender)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <span className="material-symbols-outlined text-6xl text-primary animate-spin">autorenew</span>
-          <p className="text-on-surface-variant">Loading your dashboard...</p>
-        </div>
-      </div>
-    )
-  }
 
   // If we force rendered but still no user, redirect to login
-  if (!user) {
-    navigate('/login', { replace: true })
-    return null
-  }
+if (isLoading) {
+  return <div>Loading...</div>
+}
+
+if (!user) {
+  return <Navigate to="/login" replace />
+}
+
 
   return (
     <div className="bg-background text-on-surface min-h-screen pb-32">
