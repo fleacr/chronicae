@@ -130,9 +130,6 @@ export default function HomePage() {
       console.log('Fetching weekly data for user:', user?.id)
       const stats = await PainLogService.getWeeklyStats(user!.id)
       console.log('Weekly stats received from service:', stats)
-      
-      // Only update state if component is still mounted
-      if (!isMountedRef.current) return
 
       // Initialize with 0 values for the last 7 days
       const dailyData: { [key: string]: number } = {}
@@ -154,11 +151,10 @@ export default function HomePage() {
       })
 
       console.log('Final daily data before state update:', dailyData)
-
-      if (isMountedRef.current) {
-        setWeeklyData(dailyData)
-        console.log('State updated with weekly data')
-      }
+      
+      // Update state directly - don't check isMountedRef
+      setWeeklyData(dailyData)
+      console.log('State updated with weekly data')
     } catch (error) {
       console.error('Error fetching weekly stats:', error)
       // Keep default 0 values
