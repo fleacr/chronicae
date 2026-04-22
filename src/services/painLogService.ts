@@ -12,23 +12,30 @@ export interface PainLogEntry {
 export class PainLogService {
   static async savePainLog(userId: string, data: Omit<PainLogEntry, 'id' | 'user_id' | 'created_at'>) {
     try {
-      // Get today's date range
+      // Get today's date in YYYY-MM-DD format (local timezone)
       const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateKey = today.toISOString().split('T')[0]
+      
+      // Create start and end of today in UTC for querying
+      const todayStart = new Date(dateKey + 'T00:00:00Z')
+      const tomorrowStart = new Date(todayStart)
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1)
+
+      console.log('Saving pain log for date:', dateKey, 'User:', userId)
 
       // Check if there's already an entry for today
       const { data: existingEntries, error: fetchError } = await supabase
         .from('pain_logs')
         .select('id')
         .eq('user_id', userId)
-        .gte('created_at', today.toISOString())
-        .lt('created_at', tomorrow.toISOString())
+        .gte('created_at', todayStart.toISOString())
+        .lt('created_at', tomorrowStart.toISOString())
 
       if (fetchError) {
         throw fetchError
       }
+
+      console.log('Existing entries found:', existingEntries?.length || 0)
 
       if (existingEntries && existingEntries.length > 0) {
         // Update existing entry for today
@@ -43,7 +50,11 @@ export class PainLogService {
           .eq('id', existingEntries[0].id)
           .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('Update error:', error)
+          throw error
+        }
+        console.log('Entry updated successfully')
         return entries?.[0] || null
       } else {
         // Insert new entry
@@ -55,12 +66,16 @@ export class PainLogService {
               pain_level: data.pain_level,
               description: data.description,
               tags: data.tags,
-              created_at: today.toISOString()
+              created_at: todayStart.toISOString()
             }
           ])
           .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('Insert error:', error)
+          throw error
+        }
+        console.log('Entry created successfully')
         return entries?.[0] || null
       }
     } catch (error) {
