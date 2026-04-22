@@ -21,8 +21,6 @@ export class PainLogService {
       const tomorrowStart = new Date(dateKey + 'T00:00:00Z')
       tomorrowStart.setDate(tomorrowStart.getDate() + 1)
 
-      console.log('Saving pain log for date:', dateKey, 'User:', userId)
-
       // Check if there's already an entry for today
       const { data: existingEntries, error: fetchError } = await supabase
         .from('pain_logs')
@@ -34,8 +32,6 @@ export class PainLogService {
       if (fetchError) {
         throw fetchError
       }
-
-      console.log('Existing entries found:', existingEntries?.length || 0)
 
       if (existingEntries && existingEntries.length > 0) {
         // Update existing entry for today
@@ -54,7 +50,6 @@ export class PainLogService {
           console.error('Update error:', error)
           throw error
         }
-        console.log('Entry updated successfully')
         return entries?.[0] || null
       } else {
         // Insert new entry
@@ -75,7 +70,6 @@ export class PainLogService {
           console.error('Insert error:', error)
           throw error
         }
-        console.log('Entry created successfully')
         return entries?.[0] || null
       }
     } catch (error) {
@@ -162,8 +156,6 @@ export class PainLogService {
       const sevenDaysAgo = new Date(todayUTC)
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
 
-      console.log('Fetching stats from', sevenDaysAgo.toISOString(), 'to today')
-
       const { data, error } = await supabase
         .from('pain_logs')
         .select('pain_level, created_at')
@@ -181,13 +173,10 @@ export class PainLogService {
         const entryDate = new Date(entry.created_at)
         const dateKey = entryDate.toISOString().split('T')[0]
         
-        console.log('Entry:', dateKey, 'Pain:', entry.pain_level)
-        
         if (!stats[dateKey]) stats[dateKey] = []
         stats[dateKey].push(entry.pain_level)
       })
 
-      console.log('Final weekly stats:', stats)
       return stats
     } catch (error) {
       console.error('Error fetching weekly stats:', error)

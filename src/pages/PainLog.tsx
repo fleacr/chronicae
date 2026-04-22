@@ -48,58 +48,39 @@ export default function PainLog() {
   }
 
   const handleSave = async () => {
-    console.log('handleSave called - User:', user?.id, 'Pain Level:', painLevel)
-    
     if (!user) {
-      console.error('No user')
       if (isMountedRef.current) setError('User not authenticated')
       return
     }
 
     if (painLevel === null) {
-      console.error('No pain level selected')
       if (isMountedRef.current) setError('Please select a pain level')
       return
     }
 
-    console.log('Starting save...')
     if (isMountedRef.current) {
       setIsLoading(true)
       setError(null)
     }
 
     try {
-      console.log('Calling savePainLog with data:', {
-        userId: user.id,
-        pain_level: painLevel,
-        description,
-        tags: selectedTags
-      })
-
       const result = await PainLogService.savePainLog(user.id, {
         pain_level: painLevel,
         description,
         tags: selectedTags
       })
 
-      console.log('Save result:', result)
-
       if (!result) {
         throw new Error('Failed to save entry - no result returned')
       }
 
-      console.log('Save successful, isMountedRef.current:', isMountedRef.current)
-      
       // Reset form regardless of mount status
       setPainLevel(null)
       setDescription('')
       setSelectedTags([])
       
-      console.log('Form reset, about to navigate')
-      
       // Navigate - don't check isMounted for this critical action
       setTimeout(() => {
-        console.log('Navigating to /home now')
         navigate('/home', { 
           state: { message: 'Pain entry saved successfully!' }
         })
@@ -108,7 +89,6 @@ export default function PainLog() {
       console.error('Error saving pain log:', err)
       if (isMountedRef.current) {
         const errorMsg = err?.message || 'Failed to save entry. Please try again.'
-        console.log('Setting error:', errorMsg)
         setError(errorMsg)
         setIsLoading(false)
       }

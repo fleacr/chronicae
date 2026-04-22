@@ -23,7 +23,6 @@ const getLast7Days = () => {
     last7Days.push(dateKey)
   }
   
-  console.log('Last 7 days:', last7Days)
   return last7Days
 }
 
@@ -72,10 +71,7 @@ export default function HomePage() {
         if (!isEffectMounted) return
 
         if (!session) {
-          console.log('No session found, redirecting to login')
           navigate('/login', { replace: true })
-        } else {
-          console.log('Session confirmed, user authenticated')
         }
       } catch (err) {
         console.error('Session check error:', err)
@@ -127,9 +123,7 @@ export default function HomePage() {
 
   const fetchWeeklyData = async () => {
     try {
-      console.log('Fetching weekly data for user:', user?.id)
       const stats = await PainLogService.getWeeklyStats(user!.id)
-      console.log('Weekly stats received from service:', stats)
 
       // Initialize with 0 values for the last 7 days
       const dailyData: { [key: string]: number } = {}
@@ -137,24 +131,16 @@ export default function HomePage() {
         dailyData[day] = 0
       })
 
-      console.log('Last 7 days array:', last7Days)
-      console.log('Initial dailyData structure:', dailyData)
-
       // Calculate average pain level for each day
       Object.entries(stats).forEach(([day, painLevels]: [string, number[]]) => {
-        console.log(`Processing day: "${day}", pain levels:`, painLevels)
         if (painLevels.length > 0) {
           const avgPain = Math.round(painLevels.reduce((a, b) => a + b, 0) / painLevels.length)
-          console.log(`Setting dailyData["${day}"] = ${avgPain}`)
           dailyData[day] = avgPain
         }
       })
-
-      console.log('Final daily data before state update:', dailyData)
       
       // Update state directly - don't check isMountedRef
       setWeeklyData(dailyData)
-      console.log('State updated with weekly data')
     } catch (error) {
       console.error('Error fetching weekly stats:', error)
       // Keep default 0 values
@@ -318,8 +304,6 @@ export default function HomePage() {
                 // Convert pain level (0-10) to height percentage (0-100%)
                 const heightPercent = (painLevel / 10) * 100
                 const dayAbbr = getDayAbbr(day)
-                
-                console.log(`Rendering bar for date "${day}": painLevel=${painLevel}, dayAbbr=${dayAbbr}`)
                 
                 return (
                   <div key={day} className="flex-1 flex flex-col items-center gap-3">
