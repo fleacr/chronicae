@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
 import Button from '../components/Button'
+import Toast from '../components/Toast'
 
 export default function PainLog() {
   const navigate = useNavigate()
@@ -12,7 +13,9 @@ export default function PainLog() {
   const [description, setDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string>('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+  const [showToast, setShowToast] = useState(false)
 
   const painTags = ['Sharp', 'Dull Ache', 'Throbbing', 'Radiating', 'Burning', 'Tingling', 'Numbness', 'Cramping']
 
@@ -49,18 +52,21 @@ export default function PainLog() {
 
   const handleSave = async () => {
     if (!user) {
-      if (isMountedRef.current) setError('User not authenticated')
+      setToastMessage('User not authenticated')
+      setToastType('error')
+      setShowToast(true)
       return
     }
 
     if (painLevel === null) {
-      if (isMountedRef.current) setError('Please select a pain level')
+      setToastMessage('Please select a pain level')
+      setToastType('error')
+      setShowToast(true)
       return
     }
 
     if (isMountedRef.current) {
       setIsLoading(true)
-      setError(null)
     }
 
     try {
@@ -74,22 +80,25 @@ export default function PainLog() {
         throw new Error('Failed to save entry - no result returned')
       }
 
-      // Reset form regardless of mount status
+      // Reset form
       setPainLevel(null)
       setDescription('')
       setSelectedTags([])
       
-      // Navigate - don't check isMounted for this critical action
-      setTimeout(() => {
-        navigate('/home', { 
-          state: { message: 'Pain entry saved successfully!' }
-        })
-      }, 100)
+      // Show success toast
+      if (isMountedRef.current) {
+        setToastMessage('Pain entry saved successfully!')
+        setToastType('success')
+        setShowToast(true)
+        setIsLoading(false)
+      }
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       if (isMountedRef.current) {
         const errorMsg = err?.message || 'Failed to save entry. Please try again.'
-        setError(errorMsg)
+        setToastMessage(errorMsg)
+        setToastType('error')
+        setShowToast(true)
         setIsLoading(false)
       }
     }
@@ -97,6 +106,13 @@ export default function PainLog() {
 
   return (
     <div className="bg-background text-on-surface min-h-screen">
+      <Toast 
+        isVisible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={() => setShowToast(false)}
+      />
+
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(29,27,26,0.06)]">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -125,14 +141,6 @@ export default function PainLog() {
             Tracking your sensation helps identify patterns over time.
           </p>
         </section>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-8 p-4 rounded-lg bg-error-container text-on-error-container text-sm flex gap-2 items-start">
-            <span className="material-symbols-outlined text-lg flex-shrink-0">error</span>
-            <p>{error}</p>
-          </div>
-        )}
 
         {/* Pain Level Selector */}
         <section className="mb-12">

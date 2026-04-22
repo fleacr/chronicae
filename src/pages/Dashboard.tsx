@@ -2,23 +2,41 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { AuthService } from '../services/authService'
-import { Navigate } from 'react-router-dom'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/login', { replace: true })
+    }
+  }, [isLoading, user, navigate])
 
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout()
+      navigate('/', { replace: true })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
-if (isLoading) {
-  return <div>Loading...</div>
-}
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <span className="material-symbols-outlined text-6xl text-primary animate-spin">autorenew</span>
+          <p className="text-on-surface-variant">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
-if (!user) {
-  return <Navigate to="/login" replace />
-}
-
-
+  if (!user) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
