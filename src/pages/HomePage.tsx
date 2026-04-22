@@ -38,6 +38,7 @@ export default function HomePage() {
   const { user } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
+  const [forceRender, setForceRender] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const isMountedRef = useRef(true)
   
@@ -58,6 +59,17 @@ export default function HomePage() {
     return () => {
       isMountedRef.current = false
     }
+  }, [])
+
+  // Safety timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isMountedRef.current) {
+        setForceRender(true)
+      }
+    }, 5000) // 5 second safety net
+
+    return () => clearTimeout(timeout)
   }, [])
 
   // Redirect to login only after we confirm no session exists
@@ -147,7 +159,7 @@ export default function HomePage() {
     }
   }
 
-  if (!sessionChecked || !user) {
+  if (!sessionChecked || (!user && !forceRender)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -156,6 +168,12 @@ export default function HomePage() {
         </div>
       </div>
     )
+  }
+
+  // If we force rendered but still no user, redirect to login
+  if (!user) {
+    navigate('/login', { replace: true })
+    return null
   }
 
   return (
