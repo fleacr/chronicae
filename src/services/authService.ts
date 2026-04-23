@@ -15,48 +15,61 @@ export interface LoginData {
 
 export class AuthService {
   static async signUp(data: SignUpData) {
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            fullName: data.fullName,
-            country: data.country,
-            diseaseName: data.diseaseName || null
-          }
-        }
-      })
-
-      if (authError) throw authError
-
-      // Create user profile
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(
-            {
-              id: authData.user.id,
-              email: data.email,
-              full_name: data.fullName,
-              country: data.country,
-              disease_name: data.diseaseName || null
-            },
-            { onConflict: 'id' }
-          )
-
-        if (profileError) {
-          console.warn('Profile upsert warning:', profileError)
+try {
+    // 1. Crear usuario en Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          fullName: data.fullName,
+          country: data.country,
+          diseaseName: data.diseaseName || null
         }
       }
+    })
 
-      console.log('Signup successful:', authData)
-      return authData
-    } catch (error) {
-      console.error('Signup error:', error)
-      throw error
+    if (authError) throw authError
+
+    const user = authData.user
+
+    if (!user) {
+      throw new Error('User not created')
     }
+
+    // 🔴 CLAVE: verificar sesión activa
+    const { data: sessionData } = await supabase.auth.getSession()
+
+    if (!sessionData.session) {
+      console.warn('No active session (email confirmation likely enabled)')
+      // No insert porque RLS lo va a bloquear
+      return authData
+    }
+
+    // 2. Insertar en profiles
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: data.email,
+        full_name: data.fullName,
+        country: data.country,
+        disease_name: data.diseaseName || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+    if (profileError) {
+      console.error('Profile insert error:', profileError)
+      throw profileError
+    }
+
+    return authData
+  } catch (error) {
+    console.error('Signup error:', error)
+    throw error
   }
+}
 
   static async login(data: LoginData) {
     try {
