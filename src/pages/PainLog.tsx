@@ -2,8 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
-import Button from '../components/Button'
-import Toast from '../components/Toast'
 
 export default function PainLog() {
   const navigate = useNavigate()
@@ -13,9 +11,8 @@ export default function PainLog() {
   const [description, setDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [toastMessage, setToastMessage] = useState<string>('')
-  const [toastType, setToastType] = useState<'success' | 'error'>('success')
-  const [showToast, setShowToast] = useState(false)
+  const [buttonStatus, setButtonStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
   const painTags = ['Sharp', 'Dull Ache', 'Throbbing', 'Radiating', 'Burning', 'Tingling', 'Numbness', 'Cramping']
 
@@ -52,16 +49,16 @@ export default function PainLog() {
 
   const handleSave = async () => {
     if (!user) {
-      setToastMessage('User not authenticated')
-      setToastType('error')
-      setShowToast(true)
+      setButtonStatus('error')
+      setErrorMessage('User not authenticated')
+      setTimeout(() => setButtonStatus('idle'), 3000)
       return
     }
 
     if (painLevel === null) {
-      setToastMessage('Please select a pain level')
-      setToastType('error')
-      setShowToast(true)
+      setButtonStatus('error')
+      setErrorMessage('Please select a pain level')
+      setTimeout(() => setButtonStatus('idle'), 3000)
       return
     }
 
@@ -85,34 +82,28 @@ export default function PainLog() {
       setDescription('')
       setSelectedTags([])
       
-      // Show success toast
+      // Show success state
       if (isMountedRef.current) {
-        setToastMessage('Pain entry saved successfully!')
-        setToastType('success')
-        setShowToast(true)
+        setButtonStatus('success')
         setIsLoading(false)
+        // Reset to idle after 2 seconds
+        setTimeout(() => setButtonStatus('idle'), 2000)
       }
     } catch (err: any) {
       console.error('Error saving pain log:', err)
       if (isMountedRef.current) {
         const errorMsg = err?.message || 'Failed to save entry. Please try again.'
-        setToastMessage(errorMsg)
-        setToastType('error')
-        setShowToast(true)
+        setErrorMessage(errorMsg)
+        setButtonStatus('error')
         setIsLoading(false)
+        // Reset to idle after 3 seconds
+        setTimeout(() => setButtonStatus('idle'), 3000)
       }
     }
   }
 
   return (
     <div className="bg-background text-on-surface min-h-screen">
-      <Toast 
-        isVisible={showToast}
-        message={toastMessage}
-        type={toastType}
-        onClose={() => setShowToast(false)}
-      />
-
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(29,27,26,0.06)]">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -247,17 +238,41 @@ export default function PainLog() {
         {/* Save Button */}
         <section className="fixed bottom-0 left-0 w-full px-6 pb-10 pt-6 bg-gradient-to-t from-background via-background to-transparent">
           <div className="max-w-2xl mx-auto">
-            <Button
+            <button
               onClick={handleSave}
-              isLoading={isLoading}
-              disabled={painLevel === null}
-              size="lg"
+              disabled={painLevel === null || isLoading}
+              className={`w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 ${
+                buttonStatus === 'success'
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                  : buttonStatus === 'error'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/20'
+                  : 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-lg shadow-primary/20 hover:opacity-90'
+              } ${painLevel === null || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <span>Save Entry</span>
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                done_all
-              </span>
-            </Button>
+              {isLoading && (
+                <span className="material-symbols-outlined animate-spin">autorenew</span>
+              )}
+              {!isLoading && buttonStatus === 'success' && (
+                <>
+                  <span className="material-symbols-outlined">check_circle</span>
+                  <span>Information Saved</span>
+                </>
+              )}
+              {!isLoading && buttonStatus === 'error' && (
+                <>
+                  <span className="material-symbols-outlined">error</span>
+                  <span>{errorMessage}</span>
+                </>
+              )}
+              {!isLoading && buttonStatus === 'idle' && (
+                <>
+                  <span>Save Entry</span>
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    done_all
+                  </span>
+                </>
+              )}
+            </button>
           </div>
         </section>
       </main>
