@@ -219,10 +219,11 @@ if (!user) {
 
           {/* Triggers & Relief Card */}
           <Card
-            onClick={() => alert('Coming soon: Triggers & Relief')}
+            onClick={() => navigate('/triggers-reliefs')}
             icon="balance"
             title="Triggers & Relief"
             description="Log causes or relief actions to find patterns in your health journey."
+            isClickable
           />
 
           {/* Reports Card */}

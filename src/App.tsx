@@ -5,6 +5,7 @@ import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import HomePage from './pages/HomePage'
 import PainLog from './pages/PainLog'
+import TriggersAndReliefs from './pages/TriggersAndReliefs'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/pain-log" element={<PainLog />} />
+        <Route path="/triggers-reliefs" element={<TriggersAndReliefs />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
