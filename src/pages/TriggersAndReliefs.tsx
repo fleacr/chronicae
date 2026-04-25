@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 
-interface TriggerReliefEntry {
+/* interface TriggerReliefEntry {
   id?: string
   type: 'trigger' | 'relief'
   description: string
   date: string
   created_at?: string
-}
+} */
 
 export default function TriggersAndReliefs() {
   const navigate = useNavigate()
@@ -128,7 +128,7 @@ export default function TriggersAndReliefs() {
         {/* Brand Visual Anchor */}
         <div className="flex justify-center mb-8">
           <div className="w-20 h-20 flex items-center justify-center bg-white rounded-full shadow-sm border border-outline-variant/20">
-            <span className="material-symbols-outlined text-6xl text-primary">category</span>
+            <img src="/triggers_&_reliefs.png" alt="Triggers and Reliefs" className="w-16 h-16 object-contain rounded-full" />
           </div>
         </div>
 
