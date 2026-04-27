@@ -9,16 +9,24 @@ export interface PainLogEntry {
   created_at?: string
 }
 
+// Helper function to convert Date to local YYYY-MM-DD string
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export class PainLogService {
   static async savePainLog(userId: string, data: Omit<PainLogEntry, 'id' | 'user_id' | 'created_at'>) {
     try {
-      // Get today's date in UTC YYYY-MM-DD format
+      // Get today's date in LOCAL time (YYYY-MM-DD)
       const today = new Date()
-      const dateKey = today.toISOString().split('T')[0]  // "2026-04-22"
+      const dateKey = getLocalDateString(today)
       
-      // Create start and end of today in UTC for querying
-      const todayStart = new Date(dateKey + 'T00:00:00Z')
-      const tomorrowStart = new Date(dateKey + 'T00:00:00Z')
+      // Create start and end of today for querying
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0)
+      const tomorrowStart = new Date(todayStart)
       tomorrowStart.setDate(tomorrowStart.getDate() + 1)
 
       // Check if there's already an entry for today
@@ -147,31 +155,36 @@ export class PainLogService {
 
   static async getWeeklyStats(userId: string) {
     try {
-      // Get today's date in UTC (YYYY-MM-DD)
+      // Get today's date in LOCAL time (YYYY-MM-DD)
       const today = new Date()
-      const todayStr = today.toISOString().split('T')[0]
+      const todayLocal = getLocalDateString(today)
       
-      // Calculate 6 days ago (so we get last 7 days including today)
-      const todayUTC = new Date(todayStr + 'T00:00:00Z')
-      const sevenDaysAgo = new Date(todayUTC)
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+      // Calculate 6 days ago in local time
+      const sevenDaysAgoLocal = new Date(today)
+      sevenDaysAgoLocal.setDate(sevenDaysAgoLocal.getDate() - 6)
+      
+      // Create start time for 7 days ago (00:00 local time)
+      const startDate = new Date(sevenDaysAgoLocal.getFullYear(), sevenDaysAgoLocal.getMonth(), sevenDaysAgoLocal.getDate(), 0, 0, 0, 0)
+      // Create end time for today (23:59:59 local time, but we'll add 1 day)
+      const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0, 0)
 
       const { data, error } = await supabase
         .from('pain_logs')
         .select('pain_level, created_at')
         .eq('user_id', userId)
-        .gte('created_at', sevenDaysAgo.toISOString())
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString())
         .order('created_at', { ascending: true })
 
       if (error) throw error
 
-      // Group by date (YYYY-MM-DD) using UTC
+      // Group by date (YYYY-MM-DD) using LOCAL time
       const stats: { [key: string]: number[] } = {}
       
       data.forEach((entry) => {
-        // Parse the UTC timestamp and extract date in UTC
+        // Parse the timestamp and extract date in LOCAL time
         const entryDate = new Date(entry.created_at)
-        const dateKey = entryDate.toISOString().split('T')[0]
+        const dateKey = getLocalDateString(entryDate)
         
         if (!stats[dateKey]) stats[dateKey] = []
         stats[dateKey].push(entry.pain_level)

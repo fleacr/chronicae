@@ -2,13 +2,21 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 
-/* interface TriggerReliefEntry {
+interface TriggerReliefEntry {
   id?: string
   type: 'trigger' | 'relief'
   description: string
   date: string
   created_at?: string
-} */
+}
+
+// Helper function to convert Date to local YYYY-MM-DD string
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 export default function TriggersAndReliefs() {
   const navigate = useNavigate()
@@ -18,8 +26,7 @@ export default function TriggersAndReliefs() {
   const [entryType, setEntryType] = useState<'trigger' | 'relief'>('trigger')
   const [description, setDescription] = useState('')
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
+    return getLocalDateString(new Date())
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessBanner, setShowSuccessBanner] = useState(false)

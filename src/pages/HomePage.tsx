@@ -6,20 +6,27 @@ import { AuthService } from '../services/authService'
 import Card from '../components/Card'
 import { Navigate } from 'react-router-dom'
 
-// Helper function to get the last 7 days ending with today (as YYYY-MM-DD in UTC)
+// Helper function to convert Date to local YYYY-MM-DD string
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Helper function to get the last 7 days ending with today (in local time)
 const getLast7Days = () => {
   const last7Days = []
   const today = new Date()
   
-  // Get today's UTC date string (YYYY-MM-DD)
-  const todayStr = today.toISOString().split('T')[0]
-  const todayUTC = new Date(todayStr + 'T00:00:00Z')
+  // Get today's local date
+  const todayLocal = getLocalDateString(today)
   
-  // Get the last 7 days ending with today (including today)
+  // Create date objects for the last 7 days in local time
   for (let i = 6; i >= 0; i--) {
-    const date = new Date(todayUTC)
+    const date = new Date(today)
     date.setDate(date.getDate() - i)
-    const dateKey = date.toISOString().split('T')[0]
+    const dateKey = getLocalDateString(date)
     last7Days.push(dateKey)
   }
   
