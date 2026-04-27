@@ -17,6 +17,18 @@ const getLocalDateString = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
+// Helper function to get local timestamp (not UTC)
+const getLocalTimestamp = (): string => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 export class PainLogService {
   static async savePainLog(userId: string, data: Omit<PainLogEntry, 'id' | 'user_id' | 'created_at'>) {
     try {
@@ -49,7 +61,7 @@ export class PainLogService {
             pain_level: data.pain_level,
             description: data.description,
             tags: data.tags,
-            updated_at: new Date().toISOString()
+            updated_at: getLocalTimestamp()
           })
           .eq('id', existingEntries[0].id)
           .select()
@@ -61,6 +73,7 @@ export class PainLogService {
         return entries?.[0] || null
       } else {
         // Insert new entry
+        const localTimestamp = getLocalTimestamp()
         const { data: entries, error } = await supabase
           .from('pain_logs')
           .insert([
@@ -69,7 +82,8 @@ export class PainLogService {
               pain_level: data.pain_level,
               description: data.description,
               tags: data.tags,
-              created_at: todayStart.toISOString()
+              created_at: localTimestamp,
+              updated_at: localTimestamp
             }
           ])
           .select()

@@ -1,14 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
-
-interface TriggerReliefEntry {
-  id?: string
-  type: 'trigger' | 'relief'
-  description: string
-  date: string
-  created_at?: string
-}
+import { TriggerReliefService } from '../services/triggerReliefService'
 
 // Helper function to convert Date to local YYYY-MM-DD string
 const getLocalDateString = (date: Date): string => {
@@ -67,16 +60,12 @@ export default function TriggersAndReliefs() {
     }
 
     try {
-      // TODO: Replace with actual service call to save to Supabase
-      console.log('Saving entry:', {
-        type: entryType,
+      await TriggerReliefService.saveTriggerRelief(
+        user!.id,
+        entryType,
         description,
-        date: selectedDate,
-        userId: user?.id
-      })
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+        selectedDate
+      )
 
       // Show success
       if (isMountedRef.current) {
@@ -141,16 +130,17 @@ export default function TriggersAndReliefs() {
 
         {/* Date Selector */}
         <section className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-full border border-outline-variant/20 cursor-pointer hover:bg-surface-container transition-colors active:scale-95">
+          <label htmlFor="date-picker" className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-full border border-outline-variant/20 cursor-pointer hover:bg-surface-container transition-colors active:scale-95">
             <span className="material-symbols-outlined text-tertiary text-sm">calendar_today</span>
             <span className="text-sm font-medium text-on-surface-variant tracking-wide">{formatDate(selectedDate)}</span>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="absolute opacity-0 w-0 h-0 cursor-pointer"
-            />
-          </div>
+          </label>
+          <input
+            id="date-picker"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="hidden"
+          />
         </section>
 
         {/* Form Canvas */}
