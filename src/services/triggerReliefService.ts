@@ -5,12 +5,12 @@ export interface TriggerReliefEntry {
   user_id: string
   type: 'trigger' | 'relief'
   description: string
-  date: string // YYYY-MM-DD in local time
+  date: string // YYYY-MM-DD (local)
   created_at?: string
   updated_at?: string
 }
 
-// Helper function to convert Date to local YYYY-MM-DD string
+// Helper: YYYY-MM-DD (local)
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -18,7 +18,7 @@ const getLocalDateString = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-// Helper function to get local timestamp (not UTC)
+// Helper: local timestamp
 const getLocalTimestamp = (): string => {
   const now = new Date()
   const year = now.getFullYear()
@@ -31,71 +31,49 @@ const getLocalTimestamp = (): string => {
 }
 
 export class TriggerReliefService {
+  // ✅ SIEMPRE inserta (permite múltiples entradas por día)
   static async saveTriggerRelief(
     userId: string,
     type: 'trigger' | 'relief',
     description: string,
-    date: string
+    date?: string
   ) {
     try {
-      // Check if entry already exists for this type and date
-      const { data: existingEntries, error: fetchError } = await supabase
+      const localTimestamp = getLocalTimestamp()
+
+      const { data, error } = await supabase
         .from('trigger_relief')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('type', type)
-        .eq('date', date)
-
-      if (fetchError) {
-        throw fetchError
-      }
-
-      if (existingEntries && existingEntries.length > 0) {
-        // Update existing entry
-        const { data: entries, error } = await supabase
-          .from('trigger_relief')
-          .update({
+        .insert([
+          {
+            user_id: userId,
+            type,
             description,
-            updated_at: getLocalTimestamp()
-          })
-          .eq('id', existingEntries[0].id)
-          .select()
+            date: date || getLocalDateString(new Date()),
+            created_at: localTimestamp,
+            updated_at: localTimestamp
+          }
+        ])
+        .select()
+        .single()
 
-        if (error) {
-          console.error('Update error:', error)
-          throw error
-        }
-        return entries?.[0] || null
-      } else {
-        // Insert new entry
-        const localTimestamp = getLocalTimestamp()
-        const { data: entries, error } = await supabase
-          .from('trigger_relief')
-          .insert([
-            {
-              user_id: userId,
-              type,
-              description,
-              date,
-              created_at: localTimestamp,
-              updated_at: localTimestamp
-            }
-          ])
-          .select()
-
-        if (error) {
-          console.error('Insert error:', error)
-          throw error
-        }
-        return entries?.[0] || null
+      if (error) {
+        console.error('Insert error:', error)
+        throw error
       }
+
+      return data
     } catch (error) {
       console.error('Error saving trigger/relief entry:', error)
       throw error
     }
   }
 
-  static async getTriggerReliefEntries(userId: string, type?: 'trigger' | 'relief', limit = 30) {
+  // Obtener múltiples entries
+  static async getTriggerReliefEntries(
+    userId: string,
+    type?: 'trigger' | 'relief',
+    limit = 30
+  ) {
     try {
       let query = supabase
         .from('trigger_relief')
@@ -120,6 +98,7 @@ export class TriggerReliefService {
     }
   }
 
+  // Obtener entries por fecha (pueden ser varios)
   static async getTriggerReliefByDate(userId: string, date: string) {
     try {
       const { data, error } = await supabase
@@ -127,7 +106,7 @@ export class TriggerReliefService {
         .select('*')
         .eq('user_id', userId)
         .eq('date', date)
-        .order('type')
+        .order('created_at', { ascending: false })
 
       if (error) throw error
 
@@ -138,7 +117,12 @@ export class TriggerReliefService {
     }
   }
 
-  static async getTriggerReliefEntryByTypeAndDate(userId: string, type: 'trigger' | 'relief', date: string) {
+  // ⚠️ Ahora puede devolver varios (antes asumías uno)
+  static async getTriggerReliefByTypeAndDate(
+    userId: string,
+    type: 'trigger' | 'relief',
+    date: string
+  ) {
     try {
       const { data, error } = await supabase
         .from('trigger_relief')
@@ -146,20 +130,18 @@ export class TriggerReliefService {
         .eq('user_id', userId)
         .eq('type', type)
         .eq('date', date)
-        .single()
+        .order('created_at', { ascending: false })
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows found, which is fine
-        throw error
-      }
+      if (error) throw error
 
-      return data || null
+      return data // ← ahora es array
     } catch (error) {
-      console.error('Error fetching trigger/relief entry:', error)
+      console.error('Error fetching trigger/relief entries:', error)
       throw error
     }
   }
 
+  // Delete por id
   static async deleteTriggerRelief(id: string) {
     try {
       const { error } = await supabase
@@ -174,7 +156,11 @@ export class TriggerReliefService {
     }
   }
 
-  static async updateTriggerRelief(id: string, data: Partial<TriggerReliefEntry>) {
+  // Update específico por id
+  static async updateTriggerRelief(
+    id: string,
+    data: Partial<TriggerReliefEntry>
+  ) {
     try {
       const { data: entry, error } = await supabase
         .from('trigger_relief')
