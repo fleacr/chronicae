@@ -4,8 +4,9 @@ export interface PainLogEntry {
   id?: string
   user_id: string
   pain_level: number
-  description: string
-  tags: string[]
+  description?: string
+  tags?: string[]
+  body_parts?: string[]
   created_at?: string
 }
 
@@ -61,6 +62,7 @@ export class PainLogService {
             pain_level: data.pain_level,
             description: data.description,
             tags: data.tags,
+            body_parts: data.body_parts,
             updated_at: getLocalTimestamp()
           })
           .eq('id', existingEntries[0].id)
@@ -82,6 +84,7 @@ export class PainLogService {
               pain_level: data.pain_level,
               description: data.description,
               tags: data.tags,
+              body_parts: data.body_parts,
               created_at: localTimestamp,
               updated_at: localTimestamp
             }

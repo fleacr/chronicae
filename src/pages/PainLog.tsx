@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { PainLogService } from '../services/painLogService'
+import BodySelector from '../components/BodySelector'
 
 export default function PainLog() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export default function PainLog() {
   const [painLevel, setPainLevel] = useState<number | null>(null)
   const [description, setDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedBodyParts, setSelectedBodyParts] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [buttonStatus, setButtonStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -70,7 +72,8 @@ export default function PainLog() {
       const result = await PainLogService.savePainLog(user.id, {
         pain_level: painLevel,
         description,
-        tags: selectedTags
+        tags: selectedTags,
+        body_parts: selectedBodyParts
       })
 
       if (!result) {
@@ -81,6 +84,7 @@ export default function PainLog() {
       setPainLevel(null)
       setDescription('')
       setSelectedTags([])
+      setSelectedBodyParts([])
       
       // Show success state
       if (isMountedRef.current) {
@@ -161,6 +165,13 @@ export default function PainLog() {
           <div className="mt-6 h-2 w-full rounded-full bg-gradient-to-r from-primary-fixed via-primary to-primary-container opacity-40"></div>
         </section>
 
+        {/* Body Selector */}
+        <BodySelector 
+          selectedParts={selectedBodyParts}
+          onChange={setSelectedBodyParts}
+          disabled={isLoading}
+        />
+
         {/* Description Input */}
         <section className="mb-12">
           <label className="block text-sm font-bold tracking-wider text-on-surface-variant uppercase mb-4 px-1">
@@ -220,6 +231,21 @@ export default function PainLog() {
                     {selectedTags.map((tag) => (
                       <span key={tag} className="px-2 py-1 bg-primary-fixed text-primary rounded-full text-xs font-semibold">
                         {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedBodyParts.length > 0 && (
+                <div className="flex justify-between items-start">
+                  <span className="text-on-surface-variant">Pain Areas</span>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {selectedBodyParts.map((part) => (
+                      <span key={part} className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                        {part
+                          .split('-')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
                       </span>
                     ))}
                   </div>
