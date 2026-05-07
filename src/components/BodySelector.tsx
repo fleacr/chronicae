@@ -78,11 +78,11 @@ export default function BodySelector({ selectedParts, onChange, disabled = false
       const isSelected = selectedParts.includes(pathId)
 
       if (isSelected) {
-        // Selected state - red/orange with higher opacity
-        path.setAttribute('fill', '#ef4444')
-        path.setAttribute('fill-opacity', '0.7')
-        path.setAttribute('stroke', '#dc2626')
-        path.setAttribute('stroke-width', '2')
+        // Selected state - dark red with full opacity
+        path.setAttribute('fill', '#991b1b')
+        path.setAttribute('fill-opacity', '1')
+        path.setAttribute('stroke', '#7f1d1d')
+        path.setAttribute('stroke-width', '2.5')
       } else {
         // Unselected state - transparent
         path.setAttribute('fill', 'transparent')
