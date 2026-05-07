@@ -55,13 +55,14 @@ export default function BodySelector({ selectedParts, onChange, disabled = false
     }
 
     paths.forEach(path => {
-      path.addEventListener('click', handlePathClick)
-      path.style.cursor = disabled ? 'default' : 'pointer'
+      const svgPath = path as SVGPathElement
+      svgPath.addEventListener('click', handlePathClick)
+      svgPath.style.cursor = disabled ? 'default' : 'pointer'
     })
 
     return () => {
       paths.forEach(path => {
-        path.removeEventListener('click', handlePathClick)
+        (path as SVGPathElement).removeEventListener('click', handlePathClick)
       })
     }
   }, [svgContent, selectedParts, onChange, disabled])
