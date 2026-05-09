@@ -16,7 +16,7 @@ export default function PainLog() {
   const [buttonStatus, setButtonStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
 
-  const painTags = ['Sharp', 'Dull Ache', 'Throbbing', 'Radiating', 'Burning', 'Tingling', 'Numbness', 'Cramping']
+  const painTags = ['Sharp', 'Dull Ache', 'Throbbing', 'Radiating', 'Burning', 'Tingling', 'Numbness', 'Cramping', 'Stinging', 'Pulsing', 'Shooting', 'Stabbing', 'Aching']
 
   // Track mount/unmount to prevent setState after unmount
   useEffect(() => {
