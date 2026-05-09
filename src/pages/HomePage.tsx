@@ -142,7 +142,7 @@ if (!user) {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary-fixed flex items-center justify-center">
               <img
-                src="/logo-chronicae.png"
+                src="public/logo-chronicae.png"
                 alt="Chronicae Phoenix Logo"
                 className="w-full h-full object-cover"
               />
