@@ -78,17 +78,11 @@ export default function BodySelector({ selectedParts, onChange, disabled = false
       const isSelected = selectedParts.includes(pathId)
 
       if (isSelected) {
-        // Selected state - prominent dark red outline only
-        path.setAttribute('fill', 'none')
-        path.setAttribute('fill-opacity', '0')
-        path.setAttribute('stroke', '#7f1d1d')
-        path.setAttribute('stroke-width', '4')
+        // Selected state - higher opacity (visible)
+        path.setAttribute('style', 'fill:#000000;fill-opacity:0.406393;stroke-width:0.264583')
       } else {
-        // Unselected state - subtle gray outline
-        path.setAttribute('fill', 'none')
-        path.setAttribute('fill-opacity', '0')
-        path.setAttribute('stroke', '#d1d5db')
-        path.setAttribute('stroke-width', '1')
+        // Unselected state - lower opacity (subtle)
+        path.setAttribute('style', 'fill:#000000;fill-opacity:0.046393;stroke-width:0.264583')
       }
     })
   }, [selectedParts, svgContent])
